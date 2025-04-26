@@ -1,0 +1,95 @@
+html {
+	height: 100dvh;
+}
+
+body {
+	margin: 0px;
+	min-height: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-family: "PT Sans", Arial, Helvetica, sans-serif;
+}
+
+button {
+	border: 1px solid currentColor;
+	border-radius: 0.3em;
+	background-color: transparent;
+	font-size: inherit;
+	font-family: inherit;
+	cursor: pointer;
+}
+
+.display {
+	width: min(100%, 400px);
+	display: grid;
+	grid-template-rows: auto 400px auto;
+	gap: 1em;
+}
+
+.header {
+	display: flex;
+	justify-content: space-between;
+}
+
+h2 {
+	margin: 0;
+}
+
+canvas {
+	outline: 1px solid black;
+}
+
+.display__btns {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 1em;
+}
+
+
+.loader {
+	position: relative;
+	--size: 2rem;
+	width: var(--size);
+	height: calc(var(--size) * 0.9375);
+}
+.loader-hide {
+	display: none;
+}
+.loader::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	background: aquamarine;
+	width: var(--size);
+	height: calc(var(--size) * 0.5);
+	border-radius: 0 0 50px 50px;
+	animation: move 0.5s linear infinite alternate;
+}
+.loader::before {
+	content: '';
+	position: absolute;
+	left: 50%;
+	top: 0;
+	background: lightgreen;
+	width: calc(var(--size) * 0.375);
+	height: calc(var(--size) * 0.375);
+	transform: translateX(-50%) rotate(0deg);
+	animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+	100% {
+		transform: translateX(-50%) rotate(360deg)
+	}
+}
+@keyframes move {
+	0% {
+		transform: rotate(10deg)
+	}
+	100% {
+		transform: rotate(-10deg)
+	}
+}
