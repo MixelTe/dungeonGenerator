@@ -1,5 +1,5 @@
 import * as Lib from "./littleLib.js";
-import { addFrame } from "./display.js";
+import { addFrame, lastFrame } from "./display.js";
 import { Room } from "./room.js";
 
 export class Generator
@@ -16,6 +16,7 @@ export class Generator
 	private sizeK = 1;
 	private minW = 2;
 	private maxW = 4;
+	private bImproveK = 0.05;
 	private display = false;
 	private display_split = false;
 	private rnd = Lib.randomWithSeed((() => { const r = Lib.randomInt(10000000); console.log(`r: ${r}`); return r; })());
@@ -29,49 +30,96 @@ export class Generator
 		return this;
 	}
 
-	public setRoomMinSize(w: number, h: number)
+	/**
+	 * set bounds of world
+	 * @param w width
+	 * @param h height, may be omitted for square dimensions
+	 */
+	public setSize(w: number, h = -1)
 	{
-		this.minRoomW = w;
-		this.minRoomH = h;
+		if (w < 0) { console.error(`setSize: w=${w} < 0`); return this; }
+		if (h < 0) { console.error(`setSize: h=${h} < 0`); return this; }
+		this.startW = w;
+		this.startH = h > 0 ? h : w;
 		return this;
 	}
-
+	/**
+	 * set min size of resulting rooms
+	 * @param w width
+	 * @param h height, may be omitted for square dimensions
+	 */
+	public setRoomMinSize(w: number, h = -1)
+	{
+		if (w < 0) { console.error(`setRoomMinSize: w=${w} < 0`); return this; }
+		this.minRoomW = w;
+		this.minRoomH = h > 0 ? h : w;
+		return this;
+	}
+	/**
+	 * set multiplier for the minimum room size to get random larger rooms
+	 * @param sizeK sizeK >= 1
+	 */
 	public setRoomMinSizeK(sizeK: number)
 	{
+		if (sizeK < 1) { console.error(`setRoomMinSizeK: sizeK=${sizeK} < 1`); return this; }
 		this.sizeK = sizeK;
 		return this;
 	}
-
-	public setSize(w: number, h: number)
-	{
-		this.startW = w;
-		this.startH = h;
-		return this;
-	}
-
+	/**
+	 * if true rooms will be shrinked to squares
+	 * @param square
+	 */
 	public setSquare(square: boolean)
 	{
 		this.square = square;
 		return this;
 	}
-
+	/**
+	 * set minimum gaps between rooms
+	 * @param gap gap >= 0
+	 */
 	public setGap(gap: number)
 	{
+		if (gap < 0) { console.error(`setGap: gap=${gap} < 0`); return this; }
 		this.roomGap = gap;
 		return this;
 	}
-
+	/**
+	 * set min and max division factor of the room
+	 * @param minK 0 <= minK <= 1
+	 * @param maxK 0 <= maxK <= 1
+	 */
 	public setDivideK(minK: number, maxK: number)
 	{
+		if (minK < 0 || minK > 1) { console.error(`setDivideK: minK=${minK} not in [0, 1]`); return this; }
+		if (maxK < 0 || maxK > 1) { console.error(`setDivideK: maxK=${maxK} not in [0, 1]`); return this; }
+		if (minK > maxK) { console.error(`setDivideK: minK > maxK (${minK} > ${maxK})`); return this; }
 		this.minK = minK;
 		this.maxK = maxK;
 		return this;
 	}
-
+	/**
+	 * set min and max road width between rooms
+	 * @param minK 0 <= minK <= 1
+	 * @param maxK 0 <= maxK <= 1
+	 */
 	public setRoadWidth(minW: number, maxW: number)
 	{
+		if (minW < 0) { console.error(`setRoadWidth: minW=${minW} < 0`); return this; }
+		if (maxW < 0) { console.error(`setRoadWidth: maxW=${maxW} < 0`); return this; }
+		if (minW > maxW) { console.error(`setRoadWidth: minW > maxW (${minW} > ${maxW})`); return this; }
 		this.minW = minW;
 		this.maxW = maxW;
+		return this;
+	}
+	/**
+	 * set min percentage of distance reduction between all rooms when adding connections
+	 * @param k 1 <= k <= 100
+	 */
+	public setMinImprovePercentOnConnectionsAdd(k: number)
+	{
+		if (k < 1 || k > 100) { console.error(`setMinImprovePercentOnConnectionsAdd: k=${k} not in [1, 100]`); return this; }
+		this.bImproveK = k / 100;
 		return this;
 	}
 
@@ -82,29 +130,30 @@ export class Generator
 		return this;
 	}
 
-	public gen()
+	public async gen()
 	{
 		this.rooms = [new Room(0, 0, this.startW, this.startH)];
-		if (this.display) addFrame(this.rooms, "Создание подземелья", 1);
+		if (this.display) await addFrame(this.rooms, "Создание подземелья", 1);
 
 		while (this.splitRoom())
 		{
-			if (this.display_split) addFrame(this.rooms, "Разделение комнат", 1);
+			if (this.display_split) await addFrame(this.rooms, "Разделение комнат", 1);
 		}
-		if (this.display && !this.display_split) addFrame(this.rooms, "Комнаты созданы", 1);
+		if (this.display && !this.display_split) await addFrame(this.rooms, "Комнаты созданы", 1);
 
 		this.shrinkRooms();
-		if (this.display) addFrame(this.rooms, "Добавление промежутков", 1);
+		if (this.display) await addFrame(this.rooms, "Добавление промежутков", 1);
 
 		if (this.square)
 		{
 			this.squareRooms();
-			if (this.display) addFrame(this.rooms, "Оквадрачивание комнат", 1);
+			if (this.display) await addFrame(this.rooms, "Оквадрачивание комнат", 1);
 		}
-		if (this.display) addFrame(this.rooms, "Создание графа", 2);
+		if (this.display) await addFrame(this.rooms, "Создание графа", 2);
 		const graph = this.reconnectByPrimsAlgorithm()
-		if (this.display) addFrame(this.rooms, "Применение алгоритма Прима", 2);
-		this.beautifyGraph(graph);
+		if (this.display) await addFrame(this.rooms, "Применение алгоритма Прима", 2);
+		await this.beautifyGraph(graph);
+		lastFrame();
 	}
 
 	private splitRoom()
@@ -353,9 +402,9 @@ export class Generator
 		return graph;
 	}
 
-	private beautifyGraph(graph: GraphNode[])
+	private async beautifyGraph(graph: GraphNode[])
 	{
-		console.time()
+		// console.time()
 		const variants = graph.reduce((pv, v) =>
 		{
 			[{ s: v.o.t, n: "t" }, { s: v.o.r, n: "r" }, { s: v.o.b, n: "b" }, { s: v.o.l, n: "l" }].forEach(({ s, n }) =>
@@ -386,7 +435,6 @@ export class Generator
 				side2: n == "t" ? r2.r.b : n == "r" ? r2.r.l : n == "b" ? r2.r.t : r2.r.r,
 			}
 		}
-		console.log(variants);
 		while (variants.length > 0)
 		{
 			const len = graphLen();
@@ -417,36 +465,38 @@ export class Generator
 			}
 
 			const improve = (1 - minLen / len);
+			// console.log(improve * 100);
+			if (improve < this.bImproveK) break;
 			this.rooms = graph.map(r => r.r);
-			if (this.display) addFrame(this.rooms, "Добавление соединений", 2);
-			console.log(improve * 100);
-			if (improve < 0.05) break;
+			if (this.display) await addFrame(this.rooms, "Добавление соединений", 2);
 		}
-		console.timeEnd()
+		// console.timeEnd()
 	}
 
-	private graphDistance(graph: GraphNode[], fromI: number, toI: number, path: number[] = [])
+	private graphDistance(_graph: GraphNode[], fromI: number, toI: number)
 	{
+		const graph = _graph.map(g => ({ ...g, d: 0 }));
 		if (fromI == toI) return 0;
-		path.push(fromI);
-		// console.log(path);
-		const from = graph[fromI]
-		const connections = from.r.connections();
-		let distance = -1;
-		for (let i = 0; i < connections.length; i++)
+
+		let paths = graph[fromI].r.connections().map(c => ({ fromI, toI: graph.findIndex(r => r.r == c) }));
+		let pathsNext: { fromI: number, toI: number }[] = [];
+
+		while (paths.length > 0)
 		{
-			const nextI = graph.findIndex(r => r.r == connections[i]);
-			if (path.includes(nextI)) continue;
-			const d = from.r.distance(graph[nextI].r);
-			const gd = this.graphDistance(graph, nextI, toI, path);
-			if (gd >= 0)
+			for (let i = 0; i < paths.length; i++)
 			{
-				if (distance < 0) distance = d + gd;
-				else distance = Math.min(distance, d + gd);
+				const { fromI, toI } = paths[i];
+				const from = graph[fromI];
+				const to = graph[toI];
+				const d = from.d + from.r.distance(to.r);
+				if (to.d != 0 && d >= to.d) continue;
+				to.d = d;
+				to.r.connections().forEach(c => pathsNext.push({ fromI: toI, toI: graph.findIndex(r => r.r == c) }));
 			}
+			[paths, pathsNext] = [pathsNext, paths];
+			pathsNext = [];
 		}
-		path.pop();
-		return distance;
+		return graph[toI].d;
 	}
 }
 

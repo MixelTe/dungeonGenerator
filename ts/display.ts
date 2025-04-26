@@ -5,6 +5,7 @@ const canvas = Lib.getCanvas("canvas");
 const ctx = Lib.canvas.getContext2d(canvas);
 const display_cur = Lib.getEl("display_cur", HTMLSpanElement);
 const title = Lib.getEl("title", HTMLHeadingElement);
+const loader = Lib.getDiv("loader");
 Lib.canvas.fitToParent(canvas);
 
 const frames: Frame[] = [];
@@ -50,11 +51,16 @@ function update(draw = true)
 	if (draw) frames[curFrame]?.draw();
 }
 
-export function addFrame(rooms: Room[], title: string, drawConnections = 0)
+export async function addFrame(rooms: Room[], title: string, drawConnections = 0)
 {
 	if (frames.length != 0 && curFrame == frames.length - 1) curFrame++;
 	frames.push(new Frame(rooms, title, drawConnections));
 	update(curFrame == frames.length - 1);
+	await new Promise(r => setTimeout(r));
+}
+export function lastFrame()
+{
+	loader.classList.add("loader-hide")
 }
 
 

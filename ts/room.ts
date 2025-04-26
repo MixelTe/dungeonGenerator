@@ -57,6 +57,5 @@ export class Room
 		const dx = Math.min(dx1, dx2);
 		const dy = Math.min(dy1, dy2);
 		return Math.sqrt(dx * dx + dy * dy);
-		return dx * dx + dy * dy;
 	}
 }
