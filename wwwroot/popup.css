@@ -1,0 +1,242 @@
+.popup {
+	--popup-back: #fff7e5;
+	--popup-border: lightgreen;
+	--popup-border-width: 0.5rem;
+	--popup-border-radius: 1rem;
+	--popup-closeBtn-radius: var(--popup-border-radius);
+	--transition-duration: 250ms;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 10000;
+	background-color: rgba(0, 0, 0, 0.5);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	transition: background-color var(--transition-duration);
+}
+.popup.popup-hidden {
+	background-color: rgba(0, 0, 0, 0);
+}
+.popup-block {
+	--popup-margin: 1rem;
+	position: relative;
+	display: flex;
+    flex-direction: column;
+	background-color: var(--popup-back);
+	border: var(--popup-border-width) solid var(--popup-border);
+	border-radius: var(--popup-border-radius);
+	font-size: 1.2rem;
+	min-width: 15em;
+    min-height: 8em;
+	max-height: 100vh;
+	box-shadow: 0.5em 1em 1em -1em black;
+	transition-property: opacity, transform;
+	transition-duration: var(--transition-duration);
+}
+.popup-hidden .popup-block {
+	transform: scale(0.9);
+	opacity: 0;
+}
+
+.popup-header {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin: var(--popup-margin);
+}
+.popup-title {
+	font-size: 1.2em;
+	text-align: center;
+}
+.popup-close {
+	position: absolute;
+	right: calc(-1 * var(--popup-border-width) + 1px);
+	top: calc(-1 * var(--popup-border-width) + 1px);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: var(--popup-border);
+	border: none;
+	border-radius: 0 var(--popup-border-radius) 0 var(--popup-closeBtn-radius);
+	width: 1.7em;
+	height: 1.7em;
+	outline: none;
+	font-size: inherit;
+	cursor: pointer;
+}
+.popup-close:hover,
+.popup-close:focus-visible {
+	color: tomato;
+}
+.popup-close::before,
+.popup-close::after {
+	content: "";
+	position: absolute;
+	background-color: currentColor;
+	width: 0.7em;
+	height: 0.1em;
+	border-radius: 0.1em;
+	transition: transform 200ms;
+}
+.popup-close::before {
+	transform: rotate(45deg);
+}
+.popup-close::after {
+	transform: rotate(-45deg);
+}
+.popup-close:hover::before,
+.popup-close:focus-visible::before {
+	transform: rotate(-45deg);
+}
+.popup-close:hover::after,
+.popup-close:focus-visible::after {
+	transform: rotate(45deg);
+}
+
+.popup-content {
+	margin: 0em var(--popup-margin);
+	flex-grow: 1;
+	overflow: auto;
+	overflow: overlay;
+}
+.popup-content::-webkit-scrollbar {
+	width: 7px;
+	height: 7px;
+}
+.popup-content::-webkit-scrollbar-track {
+  background-color: transparent;
+	/* background: #f1f1f1; */
+}
+.popup-content::-webkit-scrollbar-thumb {
+  background-color: rgba(136, 136, 136, 0.65);
+  border-radius: 4px;
+}
+.popup-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(136, 136, 136);
+	/* background: #555; */
+}
+
+.popup-footer {
+	display: flex;
+	justify-content: space-evenly;
+	background-color: var(--popup-border);
+	margin-top: 1em;
+	border-radius: calc(var(--popup-border-radius) - var(--popup-border-width) - 1px);
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+.popup-footer-reverse {
+	flex-direction: row-reverse;
+}
+.popup-footer button {
+	position: relative;
+	border: none;
+	background-color: transparent;
+	padding: 0 1em 0.1em 1em;
+	font-size: inherit;
+	font-weight: bold;
+	outline: none;
+}
+.popup-footer button::after {
+	content: "";
+	position: absolute;
+	width: 100%;
+	height: 0.1em;
+	background-color: currentColor;
+	bottom: 0;
+	left: 0;
+	transition: transform 125ms ease-in-out;
+	transform: scaleX(0);
+}
+.popup-footer button:hover::after,
+.popup-footer button:focus::after {
+	transform: scaleX(1);
+}
+
+.popup-contextMenu {
+	list-style: none;
+    padding-left: 0.8rem;
+}
+.popup-contextMenu ul {
+	display: none;
+}
+.popup-contextMenu li {
+	padding-right: 0;
+	cursor: pointer;
+}
+.popup-contextMenu li > :first-child {
+	padding-top: 0.2em;
+}
+.popup-contextMenu li > :last-child {
+	padding-bottom: 0.2em;
+}
+.popup-contextMenu-arrow {
+	display: inline-block;
+	width: 0.5em;
+	height: 0.5em;
+	margin-left: 0.4em;
+	background-color: currentColor;
+	clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
+	transform: translateY(-0.05em) rotate(45deg);
+}
+.popup-contextMenu-open > ul {
+	display: block;
+}
+.popup-contextMenu button {
+	background-color: transparent;
+	border: none;
+	outline: none;
+	font-size: inherit;
+}
+.popup-contextMenu-open > button .popup-contextMenu-arrow {
+	transform: translateY(-0.15em) rotate(135deg);
+}
+.popup-contextMenu li > button {
+	position: relative;
+	display: block;
+	text-align: left;
+	width: 100%;
+}
+.popup-contextMenu li > button::after {
+	content: "";
+	position: absolute;
+	display: inline-block;
+	left: -0.6em;
+	top: 50%;
+	width: 0.4em;
+	height: 0.4em;
+	background-color: lightgreen;
+	border-radius: 50%;
+	transform: scale(0.8) translateY(-30%);
+	transition: transform, 200ms ease-in-out;
+}
+.popup-contextMenu li > button:hover::after,
+.popup-contextMenu li > button:focus::after {
+	background-color: lightblue;
+	transition: transform 0ms ease-in-out;
+	transform: scale(1.2) translateY(-30%);
+}
+
+.popup-toast {
+	position: fixed;
+	left: 50%;
+	bottom: 1rem;
+	--dy: 0;
+	transform: translateX(-50%) translateY(calc(100% + 1rem));
+	background-color: #000000cc;
+	color: white;
+	font-size: 1.1rem;
+	padding: 0.4em 0.6em;
+	border-radius: 0.5em;
+	opacity: 1;
+	transition: transform 250ms, opacity 250ms;
+}
+.popup-toast_show {
+	transform: translateX(-50%) translateY(calc((-0.5rem - 100%) * var(--dy)));
+}
+.popup-toast_hide {
+	opacity: 0;
+}

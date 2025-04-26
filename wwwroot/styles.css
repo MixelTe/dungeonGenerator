@@ -1,0 +1,44 @@
+html {
+	height: 100dvh;
+}
+
+body {
+	margin: 0px;
+	min-height: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-family: "PT Sans", Arial, Helvetica, sans-serif;
+}
+
+button {
+	border: 1px solid currentColor;
+	border-radius: 0.3em;
+	background-color: transparent;
+	font-size: inherit;
+	font-family: inherit;
+	cursor: pointer;
+}
+
+.display {
+	width: min(100%, 400px);
+	display: grid;
+	grid-template-rows: auto 400px auto;
+	gap: 1em;
+}
+
+h2 {
+	margin: 0;
+}
+
+canvas {
+	outline: 1px solid black;
+}
+
+.display__btns {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 1em;
+}
+
