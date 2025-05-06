@@ -1,21 +1,23 @@
 import * as Lib from "./littleLib.js";
 import { addFrame, lastFrame } from "./display.js";
-import { Room } from "./room.js";
+import { Room, Road, RoadPoint } from "./room.js";
 
 export class Generator
 {
 	public rooms: Room[] = [];
+	public roads: Road[] = [];
 	private startW = 100;
 	private startH = 100;
 	private minRoomW = 15;
 	private minRoomH = 15;
 	private roomGap = 4;
-	private square = true;
+	private squareChance = 1;
 	private minK = 0;
 	private maxK = 1;
 	private sizeK = 1;
 	private minW = 2;
 	private maxW = 4;
+	private improveG = true;
 	private bImproveK = 0.05;
 	private display = false;
 	private display_split = false;
@@ -66,12 +68,13 @@ export class Generator
 		return this;
 	}
 	/**
-	 * if true rooms will be shrinked to squares
+	 * if 1 rooms will be always shrinked to squares
+	 * if 0 rooms will be never shrinked to squares
 	 * @param square
 	 */
-	public setSquare(square: boolean)
+	public setSquareChance(squareChance: number)
 	{
-		this.square = square;
+		this.squareChance = squareChance;
 		return this;
 	}
 	/**
@@ -112,6 +115,11 @@ export class Generator
 		this.maxW = maxW;
 		return this;
 	}
+	public setImproveConnectionsEnabled(enabled: boolean)
+	{
+		this.improveG = enabled;
+		return this;
+	}
 	/**
 	 * set min percentage of distance reduction between all rooms when adding connections
 	 * @param k 1 <= k <= 100
@@ -123,36 +131,44 @@ export class Generator
 		return this;
 	}
 
-	public setDisplay(display: boolean, display_split = false)
+	public setDisplay(display_split: boolean)
 	{
-		this.display = display;
 		this.display_split = display_split;
 		return this;
 	}
 
 	public async gen()
 	{
+		if (this.minW > this.roomGap)
+		{
+			console.warn("Road min width is greater then gap between rooms");
+		}
 		this.rooms = [new Room(0, 0, this.startW, this.startH)];
-		if (this.display) await addFrame(this.rooms, "Создание подземелья", 1);
+		await addFrame(this.rooms, this.roads, "Создание подземелья", 1);
 
 		while (this.splitRoom())
 		{
-			if (this.display_split) await addFrame(this.rooms, "Разделение комнат", 1);
+			if (this.display_split) await addFrame(this.rooms, this.roads, "Разделение комнат", 1);
 		}
-		if (this.display && !this.display_split) await addFrame(this.rooms, "Комнаты созданы", 1);
+		if (!this.display_split) await addFrame(this.rooms, this.roads, "Комнаты созданы", 1);
 
 		this.shrinkRooms();
-		if (this.display) await addFrame(this.rooms, "Добавление промежутков", 1);
+		await addFrame(this.rooms, this.roads, "Добавление промежутков", 1);
 
-		if (this.square)
+		if (this.squareChance > 0)
 		{
 			this.squareRooms();
-			if (this.display) await addFrame(this.rooms, "Оквадрачивание комнат", 1);
+			await addFrame(this.rooms, this.roads, "Оквадрачивание комнат", 1);
 		}
-		if (this.display) await addFrame(this.rooms, "Создание графа", 2);
+		await addFrame(this.rooms, this.roads, "Создание графа", 2);
 		const graph = this.reconnectByPrimsAlgorithm()
-		if (this.display) await addFrame(this.rooms, "Применение алгоритма Прима", 2);
-		await this.beautifyGraph(graph);
+		await addFrame(this.rooms, this.roads, "Применение алгоритма Прима", 2);
+		if (this.improveG) await this.beautifyGraph(graph);
+		this.buildRoads();
+		await addFrame(this.rooms, this.roads, "Построение дорог", 3);
+		this.beautifyRoads();
+		await addFrame(this.rooms, this.roads, "Выравнивание дорог", 3);
+		await addFrame(this.rooms, this.roads, "Красивая отрисовка", 4);
 		lastFrame();
 	}
 
@@ -328,6 +344,8 @@ export class Generator
 	{
 		this.rooms.forEach(room =>
 		{
+			if (this.rnd() > this.squareChance) return;
+			room.c = room.copy();
 			const size = Math.min(room.w, room.h);
 			room.x += Lib.randomInt(0, room.w - size, this.rnd);
 			room.y += Lib.randomInt(0, room.h - size, this.rnd);
@@ -455,6 +473,10 @@ export class Generator
 				side1.pop();
 				side2.pop();
 			}
+
+			const improve = (1 - minLen / len);
+			// console.log(improve * 100);
+			if (improve < this.bImproveK) break;
 			if (minVarI >= 0)
 			{
 				const v = variants[minVarI];
@@ -463,12 +485,7 @@ export class Generator
 				side1.push(v.r2.r);
 				side2.push(v.r1.r);
 			}
-
-			const improve = (1 - minLen / len);
-			// console.log(improve * 100);
-			if (improve < this.bImproveK) break;
-			this.rooms = graph.map(r => r.r);
-			if (this.display) await addFrame(this.rooms, "Добавление соединений", 2);
+			await addFrame(this.rooms, this.roads, "Добавление соединений", 2);
 		}
 		// console.timeEnd()
 	}
@@ -497,6 +514,103 @@ export class Generator
 			pathsNext = [];
 		}
 		return graph[toI].d;
+	}
+
+	private buildRoads()
+	{
+		const connections: { f: Room, t: Room }[] = [];
+		this.rooms.forEach(r =>
+		{
+			r.connections().forEach(cr =>
+			{
+				if (connections.find(c => c.f == cr && c.t == r)) return;
+				connections.push({ f: r, t: cr });
+			});
+		});
+		const road = (f: Room, t: Room) =>
+		{
+			if (f.t.includes(t))
+				return [
+					new RoadPoint(f.x + Math.floor(f.w / 2), f.y, f),
+					new RoadPoint(f.x + Math.floor(f.w / 2), f.c.y - this.roomGap)
+				]
+			if (f.r.includes(t))
+				return [
+					new RoadPoint(f.x + f.w, f.y + Math.floor(f.h / 2), f),
+					new RoadPoint(f.c.x + f.c.w + this.roomGap, f.y + Math.floor(f.h / 2))
+				]
+			if (f.b.includes(t))
+				return [
+					new RoadPoint(f.x + Math.floor(f.w / 2), f.y + f.h, f),
+					new RoadPoint(f.x + Math.floor(f.w / 2), f.c.y + f.c.h + this.roomGap)
+				]
+			return [
+				new RoadPoint(f.x, f.y + Math.floor(f.h / 2), f),
+				new RoadPoint(f.c.x - this.roomGap, f.y + Math.floor(f.h / 2))
+			]
+		}
+		this.roads = connections.map(c =>
+		{
+			const start = road(c.f, c.t);
+			const end = road(c.t, c.f).reverse();
+			const h = c.f.r.includes(c.t) || c.f.l.includes(c.t);
+			return new Road(this.minW, h, [...start, ...end]);
+		});
+	}
+
+	private beautifyRoads()
+	{
+		this.roads.forEach(road =>
+		{
+			const s = road.s;
+			const e = road.e;
+			if (!s.r || !e.r) return;
+			if (road.h)
+			{
+				if (s.r.y + s.r.w - this.minW > e.r.y &&
+					e.r.y + e.r.w - this.minW > s.r.y
+				)
+				{
+					const minY = Math.max(s.r.y, e.r.y) + this.minW;
+					const maxY = Math.min(s.r.y + s.r.w, e.r.y + e.r.w) - this.minW;
+					if (maxY < minY) return;
+					const meanY = Math.floor((s.y + e.y) / 2)
+					const y = Lib.minmax(meanY, minY, maxY);
+					s.y = y;
+					e.y = y;
+					const d = Math.min(this.maxW - this.minW, maxY - minY);
+					road.w += Math.floor(d) * this.rnd();
+					road.p = [s, e];
+				}
+				else
+				{
+					const d = Math.min(this.maxW, this.roomGap) - this.minW;
+					road.w += Math.floor(d) * this.rnd();
+				}
+			}
+			else
+			{
+				if (s.r.x + s.r.h - this.minW > e.r.x &&
+					e.r.x + e.r.h - this.minW > s.r.x
+				)
+				{
+					const minX = Math.max(s.r.x, e.r.x) + this.minW;
+					const maxX = Math.min(s.r.x + s.r.h, e.r.x + e.r.h) - this.minW;
+					const meanX = Math.floor((s.x + e.x) / 2)
+					const x = Lib.minmax(meanX, minX, maxX);
+					s.x = x;
+					e.x = x;
+					const d = Math.min(this.maxW - this.minW, maxX - minX);
+					road.w += Math.floor(d) * this.rnd();
+					road.p = [s, e];
+				}
+				else
+				{
+					const d = Math.min(this.maxW, this.roomGap) - this.minW;
+					road.w += Math.floor(d) * this.rnd();
+				}
+			}
+		});
 	}
 }
 

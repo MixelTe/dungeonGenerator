@@ -1,5 +1,5 @@
 import * as Lib from "./littleLib.js";
-import type { Room } from "./room.js";
+import type { Road, Room } from "./room.js";
 
 const canvas = Lib.getCanvas("canvas");
 const ctx = Lib.canvas.getContext2d(canvas);
@@ -51,10 +51,10 @@ function update(draw = true)
 	if (draw) frames[curFrame]?.draw();
 }
 
-export async function addFrame(rooms: Room[], title: string, drawConnections = 0)
+export async function addFrame(rooms: Room[], roads: Road[], title: string, displayMode = 0)
 {
 	if (frames.length != 0 && curFrame == frames.length - 1) curFrame++;
-	frames.push(new Frame(rooms, title, drawConnections));
+	frames.push(new Frame(rooms, roads, title, displayMode));
 	update(curFrame == frames.length - 1);
 	await new Promise(r => setTimeout(r));
 }
@@ -67,14 +67,17 @@ export function lastFrame()
 class Frame
 {
 	private rooms: Room[];
+	private roads: Road[];
 	private bounds = { x: 0, y: 0, w: 0, h: 0 };
 	constructor(
 		rooms: Room[],
+		roads: Road[],
 		public title: string,
-		private drawConnections: number,
+		private displayMode: number,
 	)
 	{
 		this.rooms = rooms.map(room => room.copy());
+		this.roads = roads.map(road => road.copy());
 		this.findBounds();
 	}
 
@@ -87,20 +90,29 @@ class Frame
 		ctx.translate(-(this.bounds.w * minScale - canvas.width) / 2, -(this.bounds.h * minScale - canvas.height) / 2);
 		ctx.scale(minScale, minScale);
 		ctx.translate(-this.bounds.x, -this.bounds.y)
+		if (this.displayMode == 4)
+			this.beautyDraw(minScale);
+		else
+			this.commonDraw(minScale);
+		ctx.restore();
+	}
+
+	private commonDraw(minScale: number)
+	{
 		ctx.fillStyle = "lightgreen";
 		this.rooms.forEach((room, i) =>
 		{
-		ctx.fillStyle = "lightgreen";
+			// ctx.fillStyle = "lightgreen";
 			fillRect(room);
-		ctx.fillStyle = "black";
-			ctx.fillText(`${i}`, room.x, room.y + 10)
+			// ctx.fillStyle = "black";
+			// ctx.fillText(`${i}`, room.x, room.y + 10)
 		});
 		this.rooms.forEach((room, i) =>
 		{
 			ctx.strokeStyle = "violet";
 			ctx.lineWidth = 2.5 / minScale;
 			strokeRect(room);
-			if (!this.drawConnections) return;
+			if (this.displayMode != 1 && this.displayMode != 2) return;
 			const cx = room.x + room.w / 2;
 			const cy = room.y + room.h / 2;
 			ctx.lineWidth = 1.5 / minScale;
@@ -114,22 +126,62 @@ class Frame
 				side.forEach(r =>
 				{
 					ctx.beginPath();
-					if (this.drawConnections == 2)
-					{
-						ctx.moveTo(cx, cy);
-						ctx.lineTo(r.x + r.w / 2, r.y + r.h / 2);
-					}
-					else
+					if (this.displayMode == 1)
 					{
 						ctx.moveTo(cx + dx * -k * room.w / 2 + dy * Lib.randomInt(0, d, rnd), cy + dy * -k * room.h / 2 + dx * Lib.randomInt(0, d, rnd));
 						ctx.lineTo(r.x + r.w / 2 + dx * k * r.w / 2 + dy * Lib.randomInt(0, d, rnd), r.y + r.h / 2 + dy * k * r.h / 2 + dx * Lib.randomInt(0, d, rnd));
 						ctx.lineTo(r.x + r.w / 2 + dx * k * r.w / 2 + dy, r.y + r.h / 2 + dy * k * r.h / 2 + dx);
 					}
+					else if (this.displayMode == 2)
+					{
+						ctx.moveTo(cx, cy);
+						ctx.lineTo(r.x + r.w / 2, r.y + r.h / 2);
+					}
 					ctx.stroke();
 				});
 			})
 		});
-		ctx.restore();
+		this.roads.forEach(r =>
+		{
+			ctx.lineWidth = r.w;
+			ctx.strokeStyle = "blue";
+			ctx.beginPath();
+			ctx.moveTo(r.p[0].x, r.p[0].y);
+			for (let i = 1; i < r.p.length; i++) {
+				const p = r.p[i];
+				ctx.lineTo(p.x, p.y);
+			}
+			ctx.stroke();
+		});
+	}
+
+	private beautyDraw(minScale: number)
+	{
+		ctx.fillStyle = "#222222";
+		fillRect(this.bounds);
+		this.rooms.forEach((room, i) =>
+		{
+			ctx.fillStyle = "#483b3a";
+			fillRect(room);
+		});
+		this.rooms.forEach((room, i) =>
+		{
+			ctx.strokeStyle = "#aa8d7a";
+			ctx.lineWidth = 3 / minScale;
+			strokeRect(room);
+		});
+		this.roads.forEach(r =>
+		{
+			ctx.lineWidth = r.w;
+			ctx.strokeStyle = "#aa8d7a";
+			ctx.beginPath();
+			ctx.moveTo(r.p[0].x, r.p[0].y);
+			for (let i = 1; i < r.p.length; i++) {
+				const p = r.p[i];
+				ctx.lineTo(p.x, p.y);
+			}
+			ctx.stroke();
+		});
 	}
 
 	private findBounds()
@@ -147,6 +199,14 @@ class Frame
 			if (room.y + room.h > y2) y2 = room.y + room.h;
 		});
 		this.bounds = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+		if (this.displayMode == 4)
+		{
+			const b = Math.floor(this.bounds.w * 0.03);
+			this.bounds.x -= b;
+			this.bounds.y -= b;
+			this.bounds.w += b * 2;
+			this.bounds.h += b * 2;
+		}
 	}
 }
 

@@ -2,15 +2,16 @@ import { Generator } from "./generator.js";
 import * as Lib from "./littleLib.js";
 
 new Generator()
-	// .setSeed(9628268)
+	// .setSeed(1818785)
 	.setSize(200, 200)
-	.setRoomMinSize(20)
+	.setRoomMinSize(15)
 	.setDivideK(0, 1)
 	.setRoomMinSizeK(2)
 	.setGap(4)
 	.setRoadWidth(2, 4)
+	// .setImproveConnectionsEnabled(false)
+	.setSquareChance(0.5)
 	.setMinImprovePercentOnConnectionsAdd(5)
-	// .setDisplay(true, false)
-	.setDisplay(true, true)
+	.setDisplay(true)
 	.gen();
 

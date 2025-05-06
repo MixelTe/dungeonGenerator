@@ -4,17 +4,22 @@ export class Room
 	public r: Room[] = [];
 	public b: Room[] = [];
 	public l: Room[] = [];
+	public c: Room;  // container
 
 	constructor(
 		public x: number,
 		public y: number,
 		public w: number,
 		public h: number,
-	) { }
+	)
+	{
+		this.c = this;
+	}
 
 	public copy(d = true)
 	{
 		const room = new Room(this.x, this.y, this.w, this.h)
+		room.c = this.c;
 		if (d)
 		{
 			room.t = this.t.map(r => r.copy(false));
@@ -56,6 +61,39 @@ export class Room
 		const dy2 = this.y - (room.y + room.h);
 		const dx = Math.min(dx1, dx2);
 		const dy = Math.min(dy1, dy2);
+		// return Math.sqrt(dx * dx + dy * dy);
 		return Math.sqrt(dx * dx + dy * dy);
+	}
+}
+
+export class Road
+{
+	constructor(
+		public w: number,
+		public h: boolean,
+		public p: RoadPoint[],
+	) { }
+
+	public get s() { return this.p[0] };
+	public get e() { return this.p[this.p.length - 1] };
+
+	public copy()
+	{
+		const road = new Road(this.w, this.h, this.p.map(p => p.copy()));
+		return road;
+	}
+}
+
+export class RoadPoint
+{
+	constructor(
+		public x: number,
+		public y: number,
+		public r: Room | null = null,
+	) { }
+
+	public copy()
+	{
+		return new RoadPoint(this.x, this.y, this.r);
 	}
 }
