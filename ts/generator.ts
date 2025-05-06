@@ -17,6 +17,7 @@ export class Generator
 	private sizeK = 1;
 	private minW = 2;
 	private maxW = 4;
+	private roadC = false;
 	private improveG = true;
 	private bImproveK = 0.05;
 	private display = false;
@@ -113,6 +114,11 @@ export class Generator
 		if (minW > maxW) { console.error(`setRoadWidth: minW > maxW (${minW} > ${maxW})`); return this; }
 		this.minW = minW;
 		this.maxW = maxW;
+		return this;
+	}
+	public setRoadAlwaysFromRoomCenter(enabled: boolean)
+	{
+		this.roadC = enabled;
 		return this;
 	}
 	public setImproveConnectionsEnabled(enabled: boolean)
@@ -344,7 +350,7 @@ export class Generator
 	{
 		this.rooms.forEach(room =>
 		{
-			if (this.rnd() > this.squareChance) return;
+			if (this.squareChance != 1 && this.rnd() > this.squareChance) return;
 			room.c = room.copy();
 			const size = Math.min(room.w, room.h);
 			room.x += Lib.randomInt(0, room.w - size, this.rnd);
@@ -567,7 +573,8 @@ export class Generator
 			if (!s.r || !e.r) return;
 			if (road.h)
 			{
-				if (s.r.y + s.r.w - this.minW > e.r.y &&
+				if (!this.roadC &&
+					s.r.y + s.r.w - this.minW > e.r.y &&
 					e.r.y + e.r.w - this.minW > s.r.y
 				)
 				{
@@ -590,7 +597,8 @@ export class Generator
 			}
 			else
 			{
-				if (s.r.x + s.r.h - this.minW > e.r.x &&
+				if (!this.roadC &&
+					s.r.x + s.r.h - this.minW > e.r.x &&
 					e.r.x + e.r.h - this.minW > s.r.x
 				)
 				{
