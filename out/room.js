@@ -7,14 +7,17 @@ export class Room {
     r = [];
     b = [];
     l = [];
+    c; // container
     constructor(x, y, w, h) {
         this.x = x;
         this.y = y;
         this.w = w;
         this.h = h;
+        this.c = this;
     }
     copy(d = true) {
         const room = new Room(this.x, this.y, this.w, this.h);
+        room.c = this.c;
         if (d) {
             room.t = this.t.map(r => r.copy(false));
             room.r = this.r.map(r => r.copy(false));
@@ -45,6 +48,38 @@ export class Room {
         const dy2 = this.y - (room.y + room.h);
         const dx = Math.min(dx1, dx2);
         const dy = Math.min(dy1, dy2);
+        // return Math.sqrt(dx * dx + dy * dy);
         return Math.sqrt(dx * dx + dy * dy);
+    }
+}
+export class Road {
+    w;
+    h;
+    p;
+    constructor(w, h, p) {
+        this.w = w;
+        this.h = h;
+        this.p = p;
+    }
+    get s() { return this.p[0]; }
+    ;
+    get e() { return this.p[this.p.length - 1]; }
+    ;
+    copy() {
+        const road = new Road(this.w, this.h, this.p.map(p => p.copy()));
+        return road;
+    }
+}
+export class RoadPoint {
+    x;
+    y;
+    r;
+    constructor(x, y, r = null) {
+        this.x = x;
+        this.y = y;
+        this.r = r;
+    }
+    copy() {
+        return new RoadPoint(this.x, this.y, this.r);
     }
 }
