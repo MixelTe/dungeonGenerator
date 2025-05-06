@@ -2,7 +2,7 @@ import { Generator } from "./generator.js";
 import * as Lib from "./littleLib.js";
 
 new Generator()
-	// .setSeed(1247746)
+	// .setSeed(3592663)
 	.setSize(200, 200)
 	.setRoomMinSize(20)
 	.setDivideK(0, 1)

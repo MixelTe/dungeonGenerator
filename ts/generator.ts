@@ -604,6 +604,7 @@ export class Generator
 				{
 					const minX = Math.max(s.r.x, e.r.x) + this.minW;
 					const maxX = Math.min(s.r.x + s.r.h, e.r.x + e.r.h) - this.minW;
+					if (maxX < minX) return;
 					const meanX = Math.floor((s.x + e.x) / 2)
 					const x = Lib.minmax(meanX, minX, maxX);
 					s.x = x;
