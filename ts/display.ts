@@ -1,5 +1,6 @@
 import * as Lib from "./littleLib.js";
 import type { Road, Room } from "./room.js";
+import { Tilemap, TILES } from "./tilemap.js";
 
 const canvas = Lib.getCanvas("canvas");
 const ctx = Lib.canvas.getContext2d(canvas);
@@ -9,6 +10,9 @@ const loader = Lib.getDiv("loader");
 Lib.canvas.fitToParent(canvas);
 
 const frames: Frame[] = [];
+const tilemap = new Tilemap();
+tilemap.load();
+const tileSize = 6;
 let curFrame = 0;
 
 Lib.addButtonListener("btn_prev", () =>
@@ -97,7 +101,7 @@ class Frame
 		ctx.restore();
 	}
 
-	private commonDraw(minScale: number)
+	private commonDraw(scale: number)
 	{
 		ctx.fillStyle = "lightgreen";
 		this.rooms.forEach((room, i) =>
@@ -110,12 +114,12 @@ class Frame
 		this.rooms.forEach((room, i) =>
 		{
 			ctx.strokeStyle = "violet";
-			ctx.lineWidth = 2.5 / minScale;
+			ctx.lineWidth = 2.5 / scale;
 			strokeRect(room);
 			if (this.displayMode != 1 && this.displayMode != 2) return;
 			const cx = room.x + room.w / 2;
 			const cy = room.y + room.h / 2;
-			ctx.lineWidth = 1.5 / minScale;
+			ctx.lineWidth = 1.5 / scale;
 			ctx.strokeStyle = "green";
 			const d = 5;
 			const k = 0.75;
@@ -147,7 +151,8 @@ class Frame
 			ctx.strokeStyle = "blue";
 			ctx.beginPath();
 			ctx.moveTo(r.p[0].x, r.p[0].y);
-			for (let i = 1; i < r.p.length; i++) {
+			for (let i = 1; i < r.p.length; i++)
+			{
 				const p = r.p[i];
 				ctx.lineTo(p.x, p.y);
 			}
@@ -155,7 +160,7 @@ class Frame
 		});
 	}
 
-	private beautyDraw(minScale: number)
+	private beautyDraw(scale: number)
 	{
 		ctx.fillStyle = "#222222";
 		fillRect(this.bounds);
@@ -163,12 +168,17 @@ class Frame
 		{
 			ctx.fillStyle = "#483b3a";
 			fillRect(room);
-		});
-		this.rooms.forEach((room, i) =>
-		{
+			ctx.save();
+			ctx.beginPath();
+			ctx.rect(room.x, room.y, room.w, room.h);
+			ctx.clip();
+			for (let x = 0; x < room.w / tileSize; x++)
+				for (let y = 0; y < room.h / tileSize; y++)
+					tilemap.draw(ctx, TILES.floor, room.x + x * tileSize, room.y + y * tileSize, tileSize, tileSize);
+			ctx.restore()
 			ctx.strokeStyle = "#aa8d7a";
-			ctx.lineWidth = 3 / minScale;
-			strokeRect(room);
+			ctx.lineWidth = 3 / scale;
+			// strokeRect(room);
 		});
 		this.roads.forEach(r =>
 		{
@@ -176,7 +186,8 @@ class Frame
 			ctx.strokeStyle = "#aa8d7a";
 			ctx.beginPath();
 			ctx.moveTo(r.p[0].x, r.p[0].y);
-			for (let i = 1; i < r.p.length; i++) {
+			for (let i = 1; i < r.p.length; i++)
+			{
 				const p = r.p[i];
 				ctx.lineTo(p.x, p.y);
 			}
