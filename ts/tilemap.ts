@@ -28,9 +28,16 @@ export class Tilemap
 		{
 			case TILES.floor: sx = Lib.randomInt(3); sy = Lib.randomInt(2); break;
 			case TILES.dev1: sx = 0; sy = 2; break;
+			case TILES.wall_top_left: sx = 3; sy = 0; break;
+			case TILES.wall_top: sx = 4; sy = 0; break;
+			case TILES.wall_top_right: sx = 5; sy = 0; break;
+			case TILES.wall_right: sx = 5; sy = 1; break;
+			case TILES.wall_bottom_right: sx = 5; sy = 2; break;
+			case TILES.wall_bottom: sx = 4; sy = 2; break;
+			case TILES.wall_bottom_left: sx = 3; sy = 2; break;
+			case TILES.wall_left: sx = 3; sy = 1; break;
 
-			default:
-				throw new Error("switch default");
+			default: throw new Error("switch default");
 		}
 		ctx.imageSmoothingEnabled = false;
 		ctx.drawImage(this.img, sx * 16, sy * 16, 16, 16, x, y, this.tileSize, this.tileSize);
@@ -62,4 +69,12 @@ export enum TILES
 {
 	floor,
 	dev1,
+	wall_top_left,
+	wall_top,
+	wall_top_right,
+	wall_right,
+	wall_bottom_right,
+	wall_bottom,
+	wall_bottom_left,
+	wall_left,
 }

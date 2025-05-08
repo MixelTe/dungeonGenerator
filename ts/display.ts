@@ -171,6 +171,14 @@ class Frame
 			ctx.fillStyle = "#483b3a";
 			fillRect(room);
 			tilemap.fillRect(ctx, TILES.floor, room);
+			tilemap.draw(ctx, TILES.wall_top_left, room.x, room.y);
+			tilemap.draw(ctx, TILES.wall_top_right, room.x + room.w - tilemap.tileSize, room.y);
+			tilemap.draw(ctx, TILES.wall_bottom_left, room.x, room.y + room.h - tilemap.tileSize);
+			tilemap.draw(ctx, TILES.wall_bottom_right, room.x + room.w - tilemap.tileSize, room.y + room.h - tilemap.tileSize);
+			tilemap.fillRect(ctx, TILES.wall_top, room.x + tilemap.tileSize, room.y, room.w - tilemap.tileSize * 2, tilemap.tileSize);
+			tilemap.fillRect(ctx, TILES.wall_right, room.x + room.w - tilemap.tileSize, room.y + tilemap.tileSize, tilemap.tileSize, room.h - tilemap.tileSize * 2);
+			tilemap.fillRect(ctx, TILES.wall_bottom, room.x + tilemap.tileSize, room.y + room.h - tilemap.tileSize, room.w - tilemap.tileSize * 2, tilemap.tileSize);
+			tilemap.fillRect(ctx, TILES.wall_left, room.x, room.y + tilemap.tileSize, tilemap.tileSize, room.h - tilemap.tileSize * 2);
 		});
 		this.roads.forEach(r =>
 		{
