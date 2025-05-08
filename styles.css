@@ -21,9 +21,9 @@ button {
 }
 
 .display {
-	width: min(100%, 400px);
+	width: min(100%, 800px);
 	display: grid;
-	grid-template-rows: auto 400px auto;
+	grid-template-rows: auto 800px auto;
 	gap: 1em;
 }
 
@@ -38,6 +38,7 @@ h2 {
 
 canvas {
 	outline: 1px solid black;
+	image-rendering: pixelated;
 }
 
 .display__btns {

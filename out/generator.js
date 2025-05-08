@@ -9,15 +9,19 @@ export class Generator {
     minRoomW = 15;
     minRoomH = 15;
     roomGap = 4;
+    roomRoadGap = 4;
     squareChance = 1;
     minK = 0;
     maxK = 1;
     sizeK = 1;
     minW = 2;
     maxW = 4;
+    roadC = false;
     improveG = true;
     bImproveK = 0.05;
-    display = false;
+    k = 1;
+    roomP = Parity.any;
+    roadP = Parity.any;
     display_split = false;
     rnd = Lib.randomWithSeed((() => { const r = Lib.randomInt(10000000); console.log(`r: ${r}`); return r; })());
     // private rnd = Lib.randomWithSeed(5515751);
@@ -43,6 +47,31 @@ export class Generator {
         }
         this.startW = w;
         this.startH = h > 0 ? h : w;
+        return this;
+    }
+    /**
+     * all values will be multiples of k
+     * @param k k: int >= 1
+     */
+    setMultiplicity(k) {
+        const ik = Math.floor(k);
+        if (ik != k) {
+            console.error(`setMultiplicity: k is not int`);
+            return this;
+        }
+        if (k < 1) {
+            console.error(`setMultiplicity: k=${k} < 1`);
+            return this;
+        }
+        this.k = k;
+        return this;
+    }
+    /**
+     * all lengths will have a given parity when divided by a multiplicity factor
+     */
+    setParity(rooms, roads = Parity.any) {
+        this.roomP = rooms;
+        this.roadP = roads;
         return this;
     }
     /**
@@ -93,6 +122,18 @@ export class Generator {
         return this;
     }
     /**
+     * set minimum gaps between room edge and road
+     * @param gap gap >= 0
+     */
+    setRoomRoadGap(gap) {
+        if (gap < 0) {
+            console.error(`setRoomRoadGap: gap=${gap} < 0`);
+            return this;
+        }
+        this.roomRoadGap = gap;
+        return this;
+    }
+    /**
      * set min and max division factor of the room
      * @param minK 0 <= minK <= 1
      * @param maxK 0 <= maxK <= 1
@@ -136,6 +177,10 @@ export class Generator {
         this.maxW = maxW;
         return this;
     }
+    setRoadAlwaysFromRoomCenter(enabled) {
+        this.roadC = enabled;
+        return this;
+    }
     setImproveConnectionsEnabled(enabled) {
         this.improveG = enabled;
         return this;
@@ -170,8 +215,14 @@ export class Generator {
             await addFrame(this.rooms, this.roads, "Комнаты созданы", 1);
         this.shrinkRooms();
         await addFrame(this.rooms, this.roads, "Добавление промежутков", 1);
+        if (this.k > 1) {
+            this.sizesToK();
+            await addFrame(this.rooms, this.roads, "Соблюдение кратности", 1);
+        }
         if (this.squareChance > 0) {
             this.squareRooms();
+            if (this.k > 1)
+                this.sizesToK();
             await addFrame(this.rooms, this.roads, "Оквадрачивание комнат", 1);
         }
         await addFrame(this.rooms, this.roads, "Создание графа", 2);
@@ -221,21 +272,21 @@ export class Generator {
                         r.l.splice(i, 1);
                 });
                 room.r.forEach(r => {
-                    if (room1.intersectsY(r, this.minW)) {
+                    if (room1.intersectsY(r)) {
                         room1.r.push(r);
                         r.l.push(room1);
                     }
-                    if (room2.intersectsY(r, this.minW)) {
+                    if (room2.intersectsY(r)) {
                         room2.r.push(r);
                         r.l.push(room2);
                     }
                 });
                 room.l.forEach(r => {
-                    if (room1.intersectsY(r, this.minW)) {
+                    if (room1.intersectsY(r)) {
                         room1.l.push(r);
                         r.r.push(room1);
                     }
-                    if (room2.intersectsY(r, this.minW)) {
+                    if (room2.intersectsY(r)) {
                         room2.l.push(r);
                         r.r.push(room2);
                     }
@@ -270,21 +321,21 @@ export class Generator {
                     r.r[i] = room1;
             });
             room.t.forEach(r => {
-                if (room1.intersectsX(r, this.minW)) {
+                if (room1.intersectsX(r)) {
                     room1.t.push(r);
                     r.b.push(room1);
                 }
-                if (room2.intersectsX(r, this.minW)) {
+                if (room2.intersectsX(r)) {
                     room2.t.push(r);
                     r.b.push(room2);
                 }
             });
             room.b.forEach(r => {
-                if (room1.intersectsX(r, this.minW)) {
+                if (room1.intersectsX(r)) {
                     room1.b.push(r);
                     r.t.push(room1);
                 }
-                if (room2.intersectsX(r, this.minW)) {
+                if (room2.intersectsX(r)) {
                     room2.b.push(r);
                     r.t.push(room2);
                 }
@@ -301,18 +352,18 @@ export class Generator {
     }
     roomCanBeSplited(room) {
         const k = this.rnd() * this.sizeK;
-        return room.w >= this.minRoomW * (2 + k) + this.roomGap * 4 ||
-            room.h >= this.minRoomH * (2 + k) + this.roomGap * 4;
+        return room.w >= (this.minRoomW + this.k) * (2 + k) + this.roomGap * 4 ||
+            room.h >= (this.minRoomH + this.k) * (2 + k) + this.roomGap * 4;
         // return this.roomCanBeXSplited(room) || this.roomCanBeYSplited(room);
     }
     roomCanBeXSplited(room) {
-        return room.w >= this.minRoomW * 2 + this.roomGap * 4;
+        return room.w >= (this.minRoomW + this.k) * 2 + this.roomGap * 4;
     }
     roomCanBeYSplited(room) {
-        return room.h >= this.minRoomH * 2 + this.roomGap * 4;
+        return room.h >= (this.minRoomH + this.k) * 2 + this.roomGap * 4;
     }
     splitSide(side, min) {
-        min += this.roomGap * 2;
+        min += (this.roomGap + this.k) * 2;
         const d = side - min * 2;
         const k = this.rnd() * (this.maxK - this.minK) + this.minK;
         return min + Math.floor(d * k);
@@ -327,7 +378,7 @@ export class Generator {
     }
     squareRooms() {
         this.rooms.forEach(room => {
-            if (this.rnd() > this.squareChance)
+            if (this.squareChance != 1 && this.rnd() > this.squareChance)
                 return;
             room.c = room.copy();
             const size = Math.min(room.w, room.h);
@@ -335,6 +386,24 @@ export class Generator {
             room.y += Lib.randomInt(0, room.h - size, this.rnd);
             room.w = size;
             room.h = size;
+        });
+    }
+    toK(v, min = 0, parity = Parity.any) {
+        if (this.k == 1)
+            return v;
+        let vk = Math.floor(v / this.k);
+        if (parity == Parity.even)
+            vk -= vk % 2;
+        else if (parity == Parity.odd)
+            vk -= (1 - vk % 2);
+        return Math.max(min, vk) * this.k;
+    }
+    sizesToK() {
+        this.rooms.forEach(room => {
+            room.x = this.toK(room.x);
+            room.y = this.toK(room.y);
+            room.w = this.toK(room.w, 0, this.roomP);
+            room.h = this.toK(room.h, 0, this.roomP);
         });
     }
     reconnectByPrimsAlgorithm() {
@@ -447,6 +516,12 @@ export class Generator {
             if (minVarI >= 0) {
                 const v = variants[minVarI];
                 variants.splice(minVarI, 1);
+                for (let i = variants.length - 1; i >= 0; i--) {
+                    const vi = variants[i];
+                    if (vi.r1 == v.r1 || vi.r1 == v.r2 ||
+                        vi.r2 == v.r1 || vi.r2 == v.r2)
+                        variants.splice(i, 1);
+                }
                 const { side1, side2 } = getSidesByVar(v);
                 side1.push(v.r2.r);
                 side2.push(v.r1.r);
@@ -487,31 +562,38 @@ export class Generator {
             });
         });
         const road = (f, t) => {
+            let r;
             if (f.t.includes(t))
-                return [
+                r = [
                     new RoadPoint(f.x + Math.floor(f.w / 2), f.y, f),
                     new RoadPoint(f.x + Math.floor(f.w / 2), f.c.y - this.roomGap)
                 ];
-            if (f.r.includes(t))
-                return [
+            else if (f.r.includes(t))
+                r = [
                     new RoadPoint(f.x + f.w, f.y + Math.floor(f.h / 2), f),
                     new RoadPoint(f.c.x + f.c.w + this.roomGap, f.y + Math.floor(f.h / 2))
                 ];
-            if (f.b.includes(t))
-                return [
+            else if (f.b.includes(t))
+                r = [
                     new RoadPoint(f.x + Math.floor(f.w / 2), f.y + f.h, f),
                     new RoadPoint(f.x + Math.floor(f.w / 2), f.c.y + f.c.h + this.roomGap)
                 ];
-            return [
-                new RoadPoint(f.x, f.y + Math.floor(f.h / 2), f),
-                new RoadPoint(f.c.x - this.roomGap, f.y + Math.floor(f.h / 2))
-            ];
+            else
+                r = [
+                    new RoadPoint(f.x, f.y + Math.floor(f.h / 2), f),
+                    new RoadPoint(f.c.x - this.roomGap, f.y + Math.floor(f.h / 2))
+                ];
+            return r;
         };
         this.roads = connections.map(c => {
             const start = road(c.f, c.t);
             const end = road(c.t, c.f).reverse();
             const h = c.f.r.includes(c.t) || c.f.l.includes(c.t);
-            return new Road(this.minW, h, [...start, ...end]);
+            if (h)
+                end[0].x = start[1].x;
+            else
+                end[0].y = start[1].y;
+            return new Road(this.toK(this.minW, 1), h, [...start, ...end]);
         });
     }
     beautifyRoads() {
@@ -520,44 +602,47 @@ export class Generator {
             const e = road.e;
             if (!s.r || !e.r)
                 return;
-            if (road.h) {
-                if (s.r.y + s.r.w - this.minW > e.r.y &&
-                    e.r.y + e.r.w - this.minW > s.r.y) {
-                    const minY = Math.max(s.r.y, e.r.y) + this.minW;
-                    const maxY = Math.min(s.r.y + s.r.w, e.r.y + e.r.w) - this.minW;
-                    if (maxY < minY)
-                        return;
-                    const meanY = Math.floor((s.y + e.y) / 2);
-                    const y = Lib.minmax(meanY, minY, maxY);
-                    s.y = y;
-                    e.y = y;
-                    const d = Math.min(this.maxW - this.minW, maxY - minY);
-                    road.w += Math.floor(d) * this.rnd();
-                    road.p = [s, e];
-                }
-                else {
-                    const d = Math.min(this.maxW, this.roomGap) - this.minW;
-                    road.w += Math.floor(d) * this.rnd();
-                }
+            const p = road.h ? "y" : "x";
+            const l = road.h ? "h" : "w";
+            const pn = road.h ? "x" : "y";
+            const minG = this.toK(this.roomRoadGap);
+            if (!this.roadC &&
+                s.r[p] + s.r[l] - minG * 2 - road.w > e.r[p] &&
+                e.r[p] + e.r[l] - minG * 2 - road.w > s.r[p]) {
+                const minY = Math.max(s.r[p], e.r[p]) + minG;
+                const maxY = Math.min(s.r[p] + s.r[l], e.r[p] + e.r[l]) - minG;
+                if (maxY < minY)
+                    return;
+                const meanY = Math.floor((s[p] + e[p]) / 2);
+                const d = Math.min(this.maxW, maxY - minY) - road.w;
+                const mink = this.roadP == Parity.even && road.w + d >= this.k * 2 ? 2 : 1;
+                road.w = this.toK(road.w + Math.floor(d * this.rnd()), mink, this.roadP);
+                const np = Lib.minmax(meanY, minY + road.w / 2, maxY - road.w / 2);
+                const npl = this.toK(np - road.w / 2) + road.w / 2;
+                s[p] = npl;
+                e[p] = npl;
+                road.p = [s, e];
             }
             else {
-                if (s.r.x + s.r.h - this.minW > e.r.x &&
-                    e.r.x + e.r.h - this.minW > s.r.x) {
-                    const minX = Math.max(s.r.x, e.r.x) + this.minW;
-                    const maxX = Math.min(s.r.x + s.r.h, e.r.x + e.r.h) - this.minW;
-                    const meanX = Math.floor((s.x + e.x) / 2);
-                    const x = Lib.minmax(meanX, minX, maxX);
-                    s.x = x;
-                    e.x = x;
-                    const d = Math.min(this.maxW - this.minW, maxX - minX);
-                    road.w += Math.floor(d) * this.rnd();
-                    road.p = [s, e];
-                }
-                else {
-                    const d = Math.min(this.maxW, this.roomGap) - this.minW;
-                    road.w += Math.floor(d) * this.rnd();
-                }
+                const d = Math.min(this.maxW, this.roomGap, s.r[l] - minG * 2, e.r[l] - minG * 2) - road.w;
+                const mink = this.roadP == Parity.even && road.w + d >= this.k * 2 ? 2 : 1;
+                road.w = this.toK(road.w + Math.floor(d * this.rnd()), mink, this.roadP);
+                const s2 = road.p[1];
+                const e2 = road.p[2];
+                s[p] = this.toK(s[p] - road.w / 2) + road.w / 2;
+                s2[p] = s[p];
+                e[p] = this.toK(e[p] - road.w / 2) + road.w / 2;
+                e2[p] = e[p];
+                const np = this.toK(s2[pn] - road.w / 2) + road.w / 2;
+                s2[pn] = np;
+                e2[pn] = np;
             }
         });
     }
 }
+export var Parity;
+(function (Parity) {
+    Parity[Parity["any"] = 0] = "any";
+    Parity[Parity["even"] = 1] = "even";
+    Parity[Parity["odd"] = 2] = "odd";
+})(Parity || (Parity = {}));

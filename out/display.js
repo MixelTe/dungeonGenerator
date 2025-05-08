@@ -1,4 +1,5 @@
 import * as Lib from "./littleLib.js";
+import { Tilemap, TILES } from "./tilemap.js";
 const canvas = Lib.getCanvas("canvas");
 const ctx = Lib.canvas.getContext2d(canvas);
 const display_cur = Lib.getEl("display_cur", HTMLSpanElement);
@@ -6,6 +7,8 @@ const title = Lib.getEl("title", HTMLHeadingElement);
 const loader = Lib.getDiv("loader");
 Lib.canvas.fitToParent(canvas);
 const frames = [];
+const tilemap = new Tilemap(4);
+tilemap.load();
 let curFrame = 0;
 Lib.addButtonListener("btn_prev", () => {
     if (curFrame > 0)
@@ -75,28 +78,28 @@ class Frame {
         ctx.scale(minScale, minScale);
         ctx.translate(-this.bounds.x, -this.bounds.y);
         if (this.displayMode == 4)
-            this.beautyDraw(minScale);
+            this.beautyDraw();
         else
             this.commonDraw(minScale);
         ctx.restore();
     }
-    commonDraw(minScale) {
+    commonDraw(scale) {
         ctx.fillStyle = "lightgreen";
         this.rooms.forEach((room, i) => {
-            // ctx.fillStyle = "lightgreen";
+            ctx.fillStyle = "lightgreen";
             fillRect(room);
-            // ctx.fillStyle = "black";
-            // ctx.fillText(`${i}`, room.x, room.y + 10)
+            ctx.fillStyle = "black";
+            ctx.fillText(`${i}`, room.x, room.y + 10);
         });
         this.rooms.forEach((room, i) => {
             ctx.strokeStyle = "violet";
-            ctx.lineWidth = 2.5 / minScale;
+            ctx.lineWidth = 2.5 / scale;
             strokeRect(room);
             if (this.displayMode != 1 && this.displayMode != 2)
                 return;
             const cx = room.x + room.w / 2;
             const cy = room.y + room.h / 2;
-            ctx.lineWidth = 1.5 / minScale;
+            ctx.lineWidth = 1.5 / scale;
             ctx.strokeStyle = "green";
             const d = 5;
             const k = 0.75;
@@ -118,7 +121,7 @@ class Frame {
                 });
             });
         });
-        this.roads.forEach(r => {
+        this.roads.forEach((r, i) => {
             ctx.lineWidth = r.w;
             ctx.strokeStyle = "blue";
             ctx.beginPath();
@@ -128,30 +131,63 @@ class Frame {
                 ctx.lineTo(p.x, p.y);
             }
             ctx.stroke();
+            ctx.fillStyle = "orange";
+            ctx.fillText(`${i}`, r.p[0].x, r.p[0].y);
         });
     }
-    beautyDraw(minScale) {
+    beautyDraw() {
+        // ctx.scale(4, 4);
         ctx.fillStyle = "#222222";
         fillRect(this.bounds);
         this.rooms.forEach((room, i) => {
             ctx.fillStyle = "#483b3a";
             fillRect(room);
-        });
-        this.rooms.forEach((room, i) => {
-            ctx.strokeStyle = "#aa8d7a";
-            ctx.lineWidth = 3 / minScale;
-            strokeRect(room);
+            tilemap.fillRect(ctx, TILES.floor, room);
+            tilemap.draw(ctx, TILES.wall_top_left, room.x, room.y);
+            tilemap.draw(ctx, TILES.wall_top_right, room.x + room.w - tilemap.tileSize, room.y);
+            tilemap.draw(ctx, TILES.wall_bottom_left, room.x, room.y + room.h - tilemap.tileSize);
+            tilemap.draw(ctx, TILES.wall_bottom_right, room.x + room.w - tilemap.tileSize, room.y + room.h - tilemap.tileSize);
+            tilemap.fillRect(ctx, TILES.wall_top, room.x + tilemap.tileSize, room.y, room.w - tilemap.tileSize * 2, tilemap.tileSize);
+            tilemap.fillRect(ctx, TILES.wall_right, room.x + room.w - tilemap.tileSize, room.y + tilemap.tileSize, tilemap.tileSize, room.h - tilemap.tileSize * 2);
+            tilemap.fillRect(ctx, TILES.wall_bottom, room.x + tilemap.tileSize, room.y + room.h - tilemap.tileSize, room.w - tilemap.tileSize * 2, tilemap.tileSize);
+            tilemap.fillRect(ctx, TILES.wall_left, room.x, room.y + tilemap.tileSize, tilemap.tileSize, room.h - tilemap.tileSize * 2);
         });
         this.roads.forEach(r => {
-            ctx.lineWidth = r.w;
-            ctx.strokeStyle = "#aa8d7a";
-            ctx.beginPath();
-            ctx.moveTo(r.p[0].x, r.p[0].y);
-            for (let i = 1; i < r.p.length; i++) {
-                const p = r.p[i];
-                ctx.lineTo(p.x, p.y);
+            const tile = TILES.floor;
+            // const tile = TILES.dev1;
+            if (r.p.length == 2) {
+                const x1 = Math.min(r.p[0].x, r.p[1].x);
+                const x2 = Math.max(r.p[0].x, r.p[1].x);
+                const y1 = Math.min(r.p[0].y, r.p[1].y);
+                const y2 = Math.max(r.p[0].y, r.p[1].y);
+                if (r.h)
+                    tilemap.fillRect(ctx, tile, x1, y1 - r.w / 2, x2 - x1, r.w);
+                else
+                    tilemap.fillRect(ctx, tile, x1 - r.w / 2, y1, r.w, y2 - y1);
             }
-            ctx.stroke();
+            else if (r.p.length == 4) {
+                const { x: x1, y: y1 } = r.p[0];
+                const { x: x2, y: y2 } = r.p[1];
+                const { x: x3, y: y3 } = r.p[2];
+                const { x: x4, y: y4 } = r.p[3];
+                if (r.h) {
+                    const dx1 = x2 > x1 ? 0 : r.w / 2;
+                    tilemap.fillRect(ctx, tile, Math.min(x1, x2) + dx1, y1 - r.w / 2, Math.abs(x2 - x1) - r.w / 2, r.w);
+                    tilemap.fillRect(ctx, tile, x2 - r.w / 2, Math.min(y2, y3) - r.w / 2, r.w, Math.abs(y2 - y3) + r.w);
+                    const dx2 = x3 > x4 ? 0 : r.w / 2;
+                    tilemap.fillRect(ctx, tile, Math.min(x4, x3) + dx2, y4 - r.w / 2, Math.abs(x3 - x4) - r.w / 2, r.w);
+                }
+                else {
+                    const dy1 = y2 > y1 ? 0 : r.w / 2;
+                    tilemap.fillRect(ctx, tile, x1 - r.w / 2, Math.min(y1, y2) + dy1, r.w, Math.abs(y1 - y2) - r.w / 2);
+                    tilemap.fillRect(ctx, tile, Math.min(x2, x3) - r.w / 2, y2 - r.w / 2, Math.abs(x2 - x3) + r.w, r.w);
+                    const dy2 = y3 > y4 ? 0 : r.w / 2;
+                    tilemap.fillRect(ctx, tile, x4 - r.w / 2, Math.min(y4, y3) + dy2, r.w, Math.abs(y4 - y3) - r.w / 2);
+                }
+            }
+            else {
+                console.error("unsupported road path");
+            }
         });
     }
     findBounds() {
@@ -171,7 +207,8 @@ class Frame {
                 y2 = room.y + room.h;
         });
         this.bounds = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
-        if (this.displayMode == 4) {
+        // if (this.displayMode == 4)
+        {
             const b = Math.floor(this.bounds.w * 0.03);
             this.bounds.x -= b;
             this.bounds.y -= b;
