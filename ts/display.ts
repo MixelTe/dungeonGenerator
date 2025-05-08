@@ -10,9 +10,8 @@ const loader = Lib.getDiv("loader");
 Lib.canvas.fitToParent(canvas);
 
 const frames: Frame[] = [];
-const tilemap = new Tilemap();
+const tilemap = new Tilemap(4);
 tilemap.load();
-const tileSize = 6;
 let curFrame = 0;
 
 Lib.addButtonListener("btn_prev", () =>
@@ -95,7 +94,7 @@ class Frame
 		ctx.scale(minScale, minScale);
 		ctx.translate(-this.bounds.x, -this.bounds.y)
 		if (this.displayMode == 4)
-			this.beautyDraw(minScale);
+			this.beautyDraw();
 		else
 			this.commonDraw(minScale);
 		ctx.restore();
@@ -106,10 +105,10 @@ class Frame
 		ctx.fillStyle = "lightgreen";
 		this.rooms.forEach((room, i) =>
 		{
-			// ctx.fillStyle = "lightgreen";
+			ctx.fillStyle = "lightgreen";
 			fillRect(room);
-			// ctx.fillStyle = "black";
-			// ctx.fillText(`${i}`, room.x, room.y + 10)
+			ctx.fillStyle = "black";
+			ctx.fillText(`${i}`, room.x, room.y + 10)
 		});
 		this.rooms.forEach((room, i) =>
 		{
@@ -145,7 +144,7 @@ class Frame
 				});
 			})
 		});
-		this.roads.forEach(r =>
+		this.roads.forEach((r, i) =>
 		{
 			ctx.lineWidth = r.w;
 			ctx.strokeStyle = "blue";
@@ -157,41 +156,68 @@ class Frame
 				ctx.lineTo(p.x, p.y);
 			}
 			ctx.stroke();
+			ctx.fillStyle = "orange";
+			ctx.fillText(`${i}`, r.p[0].x, r.p[0].y)
 		});
 	}
 
-	private beautyDraw(scale: number)
+	private beautyDraw()
 	{
+		// ctx.scale(4, 4);
 		ctx.fillStyle = "#222222";
 		fillRect(this.bounds);
 		this.rooms.forEach((room, i) =>
 		{
 			ctx.fillStyle = "#483b3a";
 			fillRect(room);
-			ctx.save();
-			ctx.beginPath();
-			ctx.rect(room.x, room.y, room.w, room.h);
-			ctx.clip();
-			for (let x = 0; x < room.w / tileSize; x++)
-				for (let y = 0; y < room.h / tileSize; y++)
-					tilemap.draw(ctx, TILES.floor, room.x + x * tileSize, room.y + y * tileSize, tileSize, tileSize);
-			ctx.restore()
-			ctx.strokeStyle = "#aa8d7a";
-			ctx.lineWidth = 3 / scale;
-			// strokeRect(room);
+			tilemap.fillRect(ctx, TILES.floor, room);
 		});
 		this.roads.forEach(r =>
 		{
-			ctx.lineWidth = r.w;
-			ctx.strokeStyle = "#aa8d7a";
-			ctx.beginPath();
-			ctx.moveTo(r.p[0].x, r.p[0].y);
-			for (let i = 1; i < r.p.length; i++)
+			const tile = TILES.floor;
+			// const tile = TILES.dev1;
+			if (r.p.length == 2)
 			{
-				const p = r.p[i];
-				ctx.lineTo(p.x, p.y);
+				const x1 = Math.min(r.p[0].x, r.p[1].x);
+				const x2 = Math.max(r.p[0].x, r.p[1].x);
+				const y1 = Math.min(r.p[0].y, r.p[1].y);
+				const y2 = Math.max(r.p[0].y, r.p[1].y);
+				if (r.h)
+					tilemap.fillRect(ctx, tile, x1, y1 - r.w / 2, x2 - x1, r.w);
+				else
+					tilemap.fillRect(ctx, tile, x1 - r.w / 2, y1, r.w, y2 - y1);
 			}
-			ctx.stroke();
+			else if (r.p.length == 4)
+			{
+				const { x: x1, y: y1 } = r.p[0];
+				const { x: x2, y: y2 } = r.p[1];
+				const { x: x3, y: y3 } = r.p[2];
+				const { x: x4, y: y4 } = r.p[3];
+				if (r.h)
+				{
+					const dx1 = x2 > x1 ? 0 : r.w / 2;
+					tilemap.fillRect(ctx, tile, Math.min(x1, x2) + dx1, y1 - r.w / 2, Math.abs(x2 - x1) - r.w / 2, r.w);
+
+					tilemap.fillRect(ctx, tile, x2 - r.w / 2, Math.min(y2, y3) - r.w / 2, r.w, Math.abs(y2 - y3) + r.w);
+
+					const dx2 = x3 > x4 ? 0 : r.w / 2;
+					tilemap.fillRect(ctx, tile, Math.min(x4, x3) + dx2, y4 - r.w / 2, Math.abs(x3 - x4) - r.w / 2, r.w);
+				}
+				else
+				{
+					const dy1 = y2 > y1 ? 0 : r.w / 2;
+					tilemap.fillRect(ctx, tile, x1 - r.w / 2, Math.min(y1, y2) + dy1, r.w, Math.abs(y1 - y2) - r.w / 2);
+
+					tilemap.fillRect(ctx, tile, Math.min(x2, x3) - r.w / 2, y2 - r.w / 2, Math.abs(x2 - x3) + r.w, r.w);
+
+					const dy2 = y3 > y4 ? 0 : r.w / 2;
+					tilemap.fillRect(ctx, tile, x4 - r.w / 2, Math.min(y4, y3) + dy2, r.w, Math.abs(y4 - y3) - r.w / 2);
+				}
+			}
+			else
+			{
+				console.error("unsupported road path");
+			}
 		});
 	}
 
@@ -210,7 +236,7 @@ class Frame
 			if (room.y + room.h > y2) y2 = room.y + room.h;
 		});
 		this.bounds = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
-		if (this.displayMode == 4)
+		// if (this.displayMode == 4)
 		{
 			const b = Math.floor(this.bounds.w * 0.03);
 			this.bounds.x -= b;
