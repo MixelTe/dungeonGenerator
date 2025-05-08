@@ -1,4 +1,4 @@
-import { Generator } from "./generator.js";
+import { Generator, Parity } from "./generator.js";
 import * as Lib from "./littleLib.js";
 
 // new Generator()
@@ -18,18 +18,19 @@ import * as Lib from "./littleLib.js";
 // 	.gen();
 
 new Generator()
-	// .setSeed(7635299)
+	.setSeed(7635299)
 	// .setSeed(6200421)
 	// .setSeed(2456052)
 	.setSize(300, 300)
 	.setMultiplicity(4)
+	// .setParity(Parity.even, Parity.even)
 	.setRoomMinSize(20)
 	.setRoomMinSizeK(1)
 	// .setSquareChance(0.5)
 	.setGap(12)
 	.setRoomRoadGap(4)
 	.setDivideK(0, 1)
-	.setRoadWidth(6, 12)
+	.setRoadWidth(6, 15)
 	// .setRoadWidth(4, 4)
 	// .setRoadWidth(4, 400)
 	// .setRoadAlwaysFromRoomCenter(true)

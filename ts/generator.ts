@@ -22,6 +22,8 @@ export class Generator
 	private improveG = true;
 	private bImproveK = 0.05;
 	private k = 1;
+	private roomP = Parity.any;
+	private roadP = Parity.any;
 	private display_split = false;
 	private rnd = Lib.randomWithSeed((() => { const r = Lib.randomInt(10000000); console.log(`r: ${r}`); return r; })());
 	// private rnd = Lib.randomWithSeed(5515751);
@@ -57,6 +59,15 @@ export class Generator
 		if (ik != k) { console.error(`setMultiplicity: k is not int`); return this; }
 		if (k < 1) { console.error(`setMultiplicity: k=${k} < 1`); return this; }
 		this.k = k;
+		return this;
+	}
+	/**
+	 * all lengths will have a given parity when divided by a multiplicity factor
+	 */
+	public setParity(rooms: Parity, roads = Parity.any)
+	{
+		this.roomP = rooms;
+		this.roadP = roads;
 		return this;
 	}
 	/**
@@ -343,22 +354,22 @@ export class Generator
 	private roomCanBeSplited(room: Room)
 	{
 		const k = this.rnd() * this.sizeK;
-		return room.w >= this.minRoomW * (2 + k) + this.roomGap * 4 ||
-			room.h >= this.minRoomH * (2 + k) + this.roomGap * 4;
+		return room.w >= (this.minRoomW + this.k) * (2 + k) + this.roomGap * 4 ||
+			room.h >= (this.minRoomH + this.k) * (2 + k) + this.roomGap * 4;
 		// return this.roomCanBeXSplited(room) || this.roomCanBeYSplited(room);
 	}
 	private roomCanBeXSplited(room: Room)
 	{
-		return room.w >= this.minRoomW * 2 + this.roomGap * 4;
+		return room.w >= (this.minRoomW + this.k) * 2 + this.roomGap * 4;
 	}
 	private roomCanBeYSplited(room: Room)
 	{
-		return room.h >= this.minRoomH * 2 + this.roomGap * 4;
+		return room.h >= (this.minRoomH + this.k) * 2 + this.roomGap * 4;
 	}
 
 	private splitSide(side: number, min: number)
 	{
-		min += this.roomGap * 2;
+		min += (this.roomGap + this.k) * 2;
 		const d = side - min * 2;
 		const k = this.rnd() * (this.maxK - this.minK) + this.minK;
 		return min + Math.floor(d * k);
@@ -389,10 +400,13 @@ export class Generator
 		});
 	}
 
-	private toK(v: number, min = 0)
+	private toK(v: number, min = 0, parity = Parity.any)
 	{
 		if (this.k == 1) return v;
-		return Math.max(min, Math.floor(v / this.k)) * this.k;
+		let vk = Math.floor(v / this.k);
+		if (parity == Parity.even) vk -= vk % 2;
+		else if (parity == Parity.odd) vk -= (1 - vk % 2);
+		return Math.max(min, vk) * this.k;
 	}
 	private sizesToK()
 	{
@@ -400,8 +414,8 @@ export class Generator
 		{
 			room.x = this.toK(room.x);
 			room.y = this.toK(room.y);
-			room.w = this.toK(room.w);
-			room.h = this.toK(room.h);
+			room.w = this.toK(room.w, 0, this.roomP);
+			room.h = this.toK(room.h, 0, this.roomP);
 		});
 	}
 
@@ -639,7 +653,8 @@ export class Generator
 				if (maxY < minY) return;
 				const meanY = Math.floor((s[p] + e[p]) / 2);
 				const d = Math.min(this.maxW, maxY - minY) - road.w;
-				road.w = this.toK(road.w + Math.floor(d * this.rnd()), 1);
+				const mink = this.roadP == Parity.even && road.w + d >= this.k * 2 ? 2 : 1;
+				road.w = this.toK(road.w + Math.floor(d * this.rnd()), mink, this.roadP);
 				const np = Lib.minmax(meanY, minY + road.w / 2, maxY - road.w / 2);
 				const npl = this.toK(np - road.w / 2) + road.w / 2;
 				s[p] = npl;
@@ -649,7 +664,8 @@ export class Generator
 			else
 			{
 				const d = Math.min(this.maxW, this.roomGap, s.r[l] - minG * 2, e.r[l] - minG * 2) - road.w;
-				road.w = this.toK(road.w + Math.floor(d * this.rnd()), 1);
+				const mink = this.roadP == Parity.even && road.w + d >= this.k * 2 ? 2 : 1;
+				road.w = this.toK(road.w + Math.floor(d * this.rnd()), mink, this.roadP);
 				const s2 = road.p[1];
 				const e2 = road.p[2];
 				s[p] = this.toK(s[p] - road.w / 2) + road.w / 2;
@@ -665,3 +681,10 @@ export class Generator
 }
 
 type GraphNode = { o: Room, r: Room };
+
+export enum Parity
+{
+	any,
+	even,
+	odd
+}
