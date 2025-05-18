@@ -5,6 +5,18 @@ export class Room
 	public b: Room[] = [];
 	public l: Room[] = [];
 	public c: Room;  // container
+	public rooms = {
+		t: null as Room | null,
+		r: null as Room | null,
+		b: null as Room | null,
+		l: null as Room | null,
+	}
+	public roads = {
+		t: null as Road | null,
+		r: null as Road | null,
+		b: null as Road | null,
+		l: null as Road | null,
+	}
 
 	constructor(
 		public x: number,
@@ -16,12 +28,23 @@ export class Room
 		this.c = this;
 	}
 
-	public copy(d = true)
+	public copy(d = true, origRoads: Road[] = [], roads: Road[] = [])
 	{
 		const room = new Room(this.x, this.y, this.w, this.h)
 		room.c = this.c;
 		if (d)
 		{
+			(["t", "r", "b", "l"] as ["t", "r", "b", "l"]).forEach(s =>
+			{
+				const road = this.roads[s];
+				if (!road) return;
+
+				const nt = roads[origRoads.indexOf(road)];
+				room.roads[s] = nt ?? null;
+
+				if (nt?.s.r == this) nt.s.r = room;
+				if (nt?.e.r == this) nt.e.r = room;
+			})
 			room.t = this.t.map(r => r.copy(false));
 			room.r = this.r.map(r => r.copy(false));
 			room.b = this.b.map(r => r.copy(false));
@@ -80,8 +103,7 @@ export class Road
 
 	public copy()
 	{
-		const road = new Road(this.w, this.h, this.p.map(p => p.copy()));
-		return road;
+		return new Road(this.w, this.h, this.p.map(p => p.copy()));
 	}
 }
 

@@ -561,6 +561,13 @@ export class Generator
 			await addFrame(this.rooms, this.roads, "Добавление соединений", 2);
 		}
 		// console.timeEnd()
+		this.rooms.forEach(r =>
+		{
+			r.rooms.t = r.t[0] ?? null;
+			r.rooms.r = r.r[0] ?? null;
+			r.rooms.b = r.b[0] ?? null;
+			r.rooms.l = r.l[0] ?? null;
+		})
 	}
 
 	private graphDistance(_graph: GraphNode[], fromI: number, toI: number)
@@ -628,7 +635,28 @@ export class Generator
 			const h = c.f.r.includes(c.t) || c.f.l.includes(c.t);
 			if (h) end[0].x = start[1].x;
 			else end[0].y = start[1].y;
-			return new Road(this.toK(this.minW, 1), h, [...start, ...end]);
+			const r = new Road(this.toK(this.minW, 1), h, [...start, ...end]);
+			if (c.f.t.includes(c.t))
+			{
+				c.f.roads.t = r;
+				c.t.roads.b = r;
+			}
+			else if (c.f.r.includes(c.t))
+			{
+				c.f.roads.r = r;
+				c.t.roads.l = r;
+			}
+			else if (c.f.b.includes(c.t))
+			{
+				c.f.roads.b = r;
+				c.t.roads.t = r;
+			}
+			else
+			{
+				c.f.roads.l = r;
+				c.t.roads.r = r;
+			}
+			return r;
 		});
 	}
 

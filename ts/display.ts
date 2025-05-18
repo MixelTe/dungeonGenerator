@@ -79,8 +79,8 @@ class Frame
 		private displayMode: number,
 	)
 	{
-		this.rooms = rooms.map(room => room.copy());
 		this.roads = roads.map(road => road.copy());
+		this.rooms = rooms.map(room => room.copy(true, roads, this.roads));
 		this.findBounds();
 	}
 
