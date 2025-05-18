@@ -65,8 +65,8 @@ class Frame {
     constructor(rooms, roads, title, displayMode) {
         this.title = title;
         this.displayMode = displayMode;
-        this.rooms = rooms.map(room => room.copy());
         this.roads = roads.map(road => road.copy());
+        this.rooms = rooms.map(room => room.copy(true, roads, this.roads));
         this.findBounds();
     }
     draw() {

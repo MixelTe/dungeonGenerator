@@ -8,6 +8,18 @@ export class Room {
     b = [];
     l = [];
     c; // container
+    rooms = {
+        t: null,
+        r: null,
+        b: null,
+        l: null,
+    };
+    roads = {
+        t: null,
+        r: null,
+        b: null,
+        l: null,
+    };
     constructor(x, y, w, h) {
         this.x = x;
         this.y = y;
@@ -15,10 +27,21 @@ export class Room {
         this.h = h;
         this.c = this;
     }
-    copy(d = true) {
+    copy(d = true, origRoads = [], roads = []) {
         const room = new Room(this.x, this.y, this.w, this.h);
         room.c = this.c;
         if (d) {
+            ["t", "r", "b", "l"].forEach(s => {
+                const road = this.roads[s];
+                if (!road)
+                    return;
+                const nt = roads[origRoads.indexOf(road)];
+                room.roads[s] = nt ?? null;
+                if (nt?.s.r == this)
+                    nt.s.r = room;
+                if (nt?.e.r == this)
+                    nt.e.r = room;
+            });
             room.t = this.t.map(r => r.copy(false));
             room.r = this.r.map(r => r.copy(false));
             room.b = this.b.map(r => r.copy(false));
@@ -67,8 +90,7 @@ export class Road {
     get e() { return this.p[this.p.length - 1]; }
     ;
     copy() {
-        const road = new Road(this.w, this.h, this.p.map(p => p.copy()));
-        return road;
+        return new Road(this.w, this.h, this.p.map(p => p.copy()));
     }
 }
 export class RoadPoint {
