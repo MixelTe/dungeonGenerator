@@ -87,7 +87,9 @@ class Frame
 	public draw()
 	{
 		Lib.canvas.fitToParent(canvas);
+		canvas.width -= 1;
 		canvas.height -= 1;
+		canvas.style.width = `${canvas.width}px`;
 		canvas.style.height = `${canvas.height}px`;
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		ctx.save();

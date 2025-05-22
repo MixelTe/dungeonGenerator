@@ -40,13 +40,12 @@ import * as Lib from "./littleLib.js";
 // 	.gen();
 
 new Generator()
-	.setSize(100, 100)
+	.setSize(120, 120)
 	.setRoomMinSize(6)
-	.setRoomMinSizeK(1)
 	.setGap(6)
 	.setRoomRoadGap(1)
 	.setDivideK(0, 1)
-	.setRoadWidth(4, 5.9)
+	.setRoadWidth(2, 3.9)
 	.setDisplay(true)
 	.gen();
 

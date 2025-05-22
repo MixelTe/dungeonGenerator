@@ -184,37 +184,37 @@ export class Generator
 			console.warn("Road min width is greater then gap between rooms");
 		}
 		this.rooms = [new Room(0, 0, this.startW, this.startH)];
-		await addFrame(this.rooms, this.roads, "Создание подземелья", 1);
+		await addFrame(this.rooms, this.roads, "Create dungeon", 1);
 
 		while (this.splitRoom())
 		{
-			if (this.display_split) await addFrame(this.rooms, this.roads, "Разделение комнат", 1);
+			if (this.display_split) await addFrame(this.rooms, this.roads, "Divide room", 1);
 		}
-		if (!this.display_split) await addFrame(this.rooms, this.roads, "Комнаты созданы", 1);
+		if (!this.display_split) await addFrame(this.rooms, this.roads, "Rooms created", 1);
 
 		this.shrinkRooms();
-		await addFrame(this.rooms, this.roads, "Добавление промежутков", 1);
+		await addFrame(this.rooms, this.roads, "Add gaps", 1);
 
 		if (this.k > 1)
 		{
 			this.sizesToK();
-			await addFrame(this.rooms, this.roads, "Соблюдение кратности", 1);
+			await addFrame(this.rooms, this.roads, "Multiplicity", 1);
 		}
 		if (this.squareChance > 0)
 		{
 			this.squareRooms();
 			if (this.k > 1) this.sizesToK();
-			await addFrame(this.rooms, this.roads, "Оквадрачивание комнат", 1);
+			await addFrame(this.rooms, this.roads, "Square rooms", 1);
 		}
-		await addFrame(this.rooms, this.roads, "Создание графа", 2);
+		await addFrame(this.rooms, this.roads, "Creating graph", 2);
 		const graph = this.reconnectByPrimsAlgorithm()
-		await addFrame(this.rooms, this.roads, "Применение алгоритма Прима", 2);
+		await addFrame(this.rooms, this.roads, "Applying the Prim algorithm", 2);
 		if (this.improveG) await this.beautifyGraph(graph);
 		this.buildRoads();
-		await addFrame(this.rooms, this.roads, "Построение дорог", 3);
+		await addFrame(this.rooms, this.roads, "Creating roads", 3);
 		this.beautifyRoads();
-		await addFrame(this.rooms, this.roads, "Выравнивание дорог", 3);
-		await addFrame(this.rooms, this.roads, "Красивая отрисовка", 4);
+		await addFrame(this.rooms, this.roads, "Road alignment", 3);
+		await addFrame(this.rooms, this.roads, "Beautiful rendering", 4);
 		lastFrame();
 	}
 
@@ -558,7 +558,7 @@ export class Generator
 				side1.push(v.r2.r);
 				side2.push(v.r1.r);
 			}
-			await addFrame(this.rooms, this.roads, "Добавление соединений", 2);
+			await addFrame(this.rooms, this.roads, "Adding connections", 2);
 		}
 		// console.timeEnd()
 		this.rooms.forEach(r =>
