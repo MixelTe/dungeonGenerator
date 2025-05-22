@@ -40,8 +40,8 @@ h2 {
 
 .canvas {
 	display: flex;
-	height: 2000px;
-	width: 2000px;
+	/* height: 2000px;
+	width: 2000px; */
 }
 
 canvas {

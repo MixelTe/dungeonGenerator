@@ -402,7 +402,7 @@ export class Generator
 
 	private toK(v: number, min = 0, parity = Parity.any)
 	{
-		if (this.k == 1) return v;
+		if (this.k == 1) return Math.floor(v);
 		let vk = Math.floor(v / this.k);
 		if (parity == Parity.even) vk -= vk % 2;
 		else if (parity == Parity.odd) vk -= (1 - vk % 2);
