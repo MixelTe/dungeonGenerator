@@ -6,16 +6,19 @@ export class Tilemap
 	private loaded = false;
 
 	constructor(
-		public tileSize = 4,
+		public tileSize = 1,
 	) { }
 
-	public load()
+	public load(small = false)
 	{
 		this.img.onload = () =>
 		{
 			this.loaded = true;
 		};
-		this.img.src = "imgs/tiles.png";
+		if (small)
+			this.img.src = "imgs/tiles_small.png";
+		else
+			this.img.src = "imgs/tiles.png";
 		// this.img.src = "imgs/tiles_dev.png";
 	}
 

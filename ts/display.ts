@@ -10,8 +10,8 @@ const loader = Lib.getDiv("loader");
 Lib.canvas.fitToParent(canvas);
 
 const frames: Frame[] = [];
-const tilemap = new Tilemap(1);
-tilemap.load();
+const tilemap = new Tilemap();
+tilemap.load(true);
 let curFrame = 0;
 
 Lib.addButtonListener("btn_prev", () =>
