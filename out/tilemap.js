@@ -3,14 +3,17 @@ export class Tilemap {
     tileSize;
     img = new Image();
     loaded = false;
-    constructor(tileSize = 4) {
+    constructor(tileSize = 1) {
         this.tileSize = tileSize;
     }
-    load() {
+    load(small = false) {
         this.img.onload = () => {
             this.loaded = true;
         };
-        this.img.src = "imgs/tiles.png";
+        if (small)
+            this.img.src = "imgs/tiles_small.png";
+        else
+            this.img.src = "imgs/tiles.png";
         // this.img.src = "imgs/tiles_dev.png";
     }
     draw(ctx, tile, x, y) {
@@ -59,6 +62,22 @@ export class Tilemap {
                 sx = 3;
                 sy = 1;
                 break;
+            case TILES.wall_bottom_left_outer:
+                sx = 6;
+                sy = 1;
+                break;
+            case TILES.wall_bottom_right_outer:
+                sx = 7;
+                sy = 1;
+                break;
+            case TILES.wall_top_left_outer:
+                sx = 6;
+                sy = 0;
+                break;
+            case TILES.wall_top_right_outer:
+                sx = 7;
+                sy = 0;
+                break;
             default: throw new Error("switch default");
         }
         ctx.imageSmoothingEnabled = false;
@@ -86,11 +105,15 @@ export var TILES;
     TILES[TILES["floor"] = 0] = "floor";
     TILES[TILES["dev1"] = 1] = "dev1";
     TILES[TILES["wall_top_left"] = 2] = "wall_top_left";
-    TILES[TILES["wall_top"] = 3] = "wall_top";
-    TILES[TILES["wall_top_right"] = 4] = "wall_top_right";
-    TILES[TILES["wall_right"] = 5] = "wall_right";
-    TILES[TILES["wall_bottom_right"] = 6] = "wall_bottom_right";
-    TILES[TILES["wall_bottom"] = 7] = "wall_bottom";
-    TILES[TILES["wall_bottom_left"] = 8] = "wall_bottom_left";
-    TILES[TILES["wall_left"] = 9] = "wall_left";
+    TILES[TILES["wall_bottom_left_outer"] = 3] = "wall_bottom_left_outer";
+    TILES[TILES["wall_top"] = 4] = "wall_top";
+    TILES[TILES["wall_top_right"] = 5] = "wall_top_right";
+    TILES[TILES["wall_bottom_right_outer"] = 6] = "wall_bottom_right_outer";
+    TILES[TILES["wall_right"] = 7] = "wall_right";
+    TILES[TILES["wall_bottom_right"] = 8] = "wall_bottom_right";
+    TILES[TILES["wall_top_right_outer"] = 9] = "wall_top_right_outer";
+    TILES[TILES["wall_bottom"] = 10] = "wall_bottom";
+    TILES[TILES["wall_bottom_left"] = 11] = "wall_bottom_left";
+    TILES[TILES["wall_top_left_outer"] = 12] = "wall_top_left_outer";
+    TILES[TILES["wall_left"] = 13] = "wall_left";
 })(TILES || (TILES = {}));
