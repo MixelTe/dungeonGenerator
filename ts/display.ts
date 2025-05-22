@@ -10,7 +10,7 @@ const loader = Lib.getDiv("loader");
 Lib.canvas.fitToParent(canvas);
 
 const frames: Frame[] = [];
-const tilemap = new Tilemap(4);
+const tilemap = new Tilemap(1);
 tilemap.load();
 let curFrame = 0;
 
@@ -87,6 +87,8 @@ class Frame
 	public draw()
 	{
 		Lib.canvas.fitToParent(canvas);
+		canvas.height -= 1;
+		canvas.style.height = `${canvas.height}px`;
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		ctx.save();
 		const minScale = Math.min(canvas.width / this.bounds.w, canvas.height / this.bounds.h);
@@ -107,8 +109,8 @@ class Frame
 		{
 			ctx.fillStyle = "lightgreen";
 			fillRect(room);
-			ctx.fillStyle = "black";
-			ctx.fillText(`${i}`, room.x, room.y + 10)
+			// ctx.fillStyle = "black";
+			// ctx.fillText(`${i}`, room.x, room.y + 10)
 		});
 		this.rooms.forEach((room, i) =>
 		{
@@ -156,13 +158,14 @@ class Frame
 				ctx.lineTo(p.x, p.y);
 			}
 			ctx.stroke();
-			ctx.fillStyle = "orange";
-			ctx.fillText(`${i}`, r.p[0].x, r.p[0].y)
+			// ctx.fillStyle = "orange";
+			// ctx.fillText(`${i}`, r.p[0].x, r.p[0].y)
 		});
 	}
 
 	private beautyDraw()
 	{
+		// ctx.translate(-450, -300)
 		// ctx.scale(4, 4);
 		ctx.fillStyle = "#222222";
 		fillRect(this.bounds);
@@ -175,10 +178,38 @@ class Frame
 			tilemap.draw(ctx, TILES.wall_top_right, room.x + room.w - tilemap.tileSize, room.y);
 			tilemap.draw(ctx, TILES.wall_bottom_left, room.x, room.y + room.h - tilemap.tileSize);
 			tilemap.draw(ctx, TILES.wall_bottom_right, room.x + room.w - tilemap.tileSize, room.y + room.h - tilemap.tileSize);
-			tilemap.fillRect(ctx, TILES.wall_top, room.x + tilemap.tileSize, room.y, room.w - tilemap.tileSize * 2, tilemap.tileSize);
-			tilemap.fillRect(ctx, TILES.wall_right, room.x + room.w - tilemap.tileSize, room.y + tilemap.tileSize, tilemap.tileSize, room.h - tilemap.tileSize * 2);
-			tilemap.fillRect(ctx, TILES.wall_bottom, room.x + tilemap.tileSize, room.y + room.h - tilemap.tileSize, room.w - tilemap.tileSize * 2, tilemap.tileSize);
-			tilemap.fillRect(ctx, TILES.wall_left, room.x, room.y + tilemap.tileSize, tilemap.tileSize, room.h - tilemap.tileSize * 2);
+			const drawWallX = (road: Road | null, tile: TILES, y: number) =>
+			{
+				if (road)
+				{
+					const s = road.s.r == room ? road.s : road.e;
+					const x = s.x - room.x - road.w / 2;
+					tilemap.fillRect(ctx, tile, room.x + tilemap.tileSize, y, x - tilemap.tileSize, tilemap.tileSize);
+					tilemap.fillRect(ctx, tile, room.x + x + road.w, y, room.w - road.w - x - tilemap.tileSize, tilemap.tileSize);
+				}
+				else
+				{
+					tilemap.fillRect(ctx, tile, room.x + tilemap.tileSize, y, room.w - tilemap.tileSize * 2, tilemap.tileSize);
+				}
+			}
+			const drawWallY = (road: Road | null, tile: TILES, x: number) =>
+			{
+				if (road)
+				{
+					const s = road.s.r == room ? road.s : road.e;
+					const y = s.y - room.y - road.w / 2;
+					tilemap.fillRect(ctx, tile, x, room.y + tilemap.tileSize, tilemap.tileSize, y - tilemap.tileSize);
+					tilemap.fillRect(ctx, tile, x, room.y + y + road.w, tilemap.tileSize, room.w - road.w - y - tilemap.tileSize);
+				}
+				else
+				{
+					tilemap.fillRect(ctx, tile, x, room.y + tilemap.tileSize, tilemap.tileSize, room.h - tilemap.tileSize * 2);
+				}
+			}
+			drawWallX(room.roads.t, TILES.wall_top, room.y);
+			drawWallY(room.roads.r, TILES.wall_right, room.x + room.w - tilemap.tileSize);
+			drawWallX(room.roads.b, TILES.wall_bottom, room.y + room.h - tilemap.tileSize);
+			drawWallY(room.roads.l, TILES.wall_left, room.x);
 		});
 		this.roads.forEach(r =>
 		{
@@ -191,9 +222,25 @@ class Frame
 				const y1 = Math.min(r.p[0].y, r.p[1].y);
 				const y2 = Math.max(r.p[0].y, r.p[1].y);
 				if (r.h)
+				{
 					tilemap.fillRect(ctx, tile, x1, y1 - r.w / 2, x2 - x1, r.w);
+					tilemap.fillRect(ctx, TILES.wall_top, x1, y1 - r.w / 2, x2 - x1, tilemap.tileSize);
+					tilemap.fillRect(ctx, TILES.wall_bottom, x1, y1 + r.w / 2 - tilemap.tileSize, x2 - x1, tilemap.tileSize);
+					tilemap.draw(ctx, TILES.wall_bottom_left_outer, x1 - tilemap.tileSize, y1 - r.w / 2);
+					tilemap.draw(ctx, TILES.wall_bottom_right_outer, x2, y1 - r.w / 2);
+					tilemap.draw(ctx, TILES.wall_top_left_outer, x1 - tilemap.tileSize, y1 + r.w / 2 - tilemap.tileSize);
+					tilemap.draw(ctx, TILES.wall_top_right_outer, x2, y1 + r.w / 2 - tilemap.tileSize);
+				}
 				else
+				{
 					tilemap.fillRect(ctx, tile, x1 - r.w / 2, y1, r.w, y2 - y1);
+					tilemap.fillRect(ctx, TILES.wall_left, x1 - r.w / 2, y1, tilemap.tileSize, y2 - y1);
+					tilemap.fillRect(ctx, TILES.wall_right, x1 + r.w / 2 - tilemap.tileSize, y1, tilemap.tileSize, y2 - y1);
+					tilemap.draw(ctx, TILES.wall_top_right_outer, x1 - r.w / 2, y1 - tilemap.tileSize);
+					tilemap.draw(ctx, TILES.wall_top_left_outer, x1 + r.w / 2 - tilemap.tileSize, y1 - tilemap.tileSize);
+					tilemap.draw(ctx, TILES.wall_bottom_right_outer, x1 - r.w / 2, y2);
+					tilemap.draw(ctx, TILES.wall_bottom_left_outer, x1 + r.w / 2 - tilemap.tileSize, y2);
+				}
 			}
 			else if (r.p.length == 4)
 			{
@@ -210,6 +257,41 @@ class Frame
 
 					const dx2 = x3 > x4 ? 0 : r.w / 2;
 					tilemap.fillRect(ctx, tile, Math.min(x4, x3) + dx2, y4 - r.w / 2, Math.abs(x3 - x4) - r.w / 2, r.w);
+
+					(function drawWalls()
+					{
+						tilemap.fillRect(ctx, TILES.wall_top, Math.min(x1, x2) + dx1, y1 - r.w / 2, Math.abs(x2 - x1) - r.w / 2, tilemap.tileSize);
+						tilemap.fillRect(ctx, TILES.wall_bottom, Math.min(x1, x2) + dx1, y1 + r.w / 2 - tilemap.tileSize, Math.abs(x2 - x1) - r.w / 2, tilemap.tileSize);
+						if (y2 < y3 != x2 > x1)
+						{
+							tilemap.fillRect(ctx, TILES.wall_top, x2 - r.w / 2 + tilemap.tileSize, Math.min(y2, y3) - r.w / 2, r.w - tilemap.tileSize, tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_top_left, x2 - r.w / 2, Math.min(y2, y3) - r.w / 2);
+							tilemap.fillRect(ctx, TILES.wall_left, x2 - r.w / 2, Math.min(y2, y3) - r.w / 2 + tilemap.tileSize, tilemap.tileSize, Math.abs(y2 - y3) - tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_bottom_right_outer, x2 - r.w / 2, Math.max(y2, y3) - r.w / 2);
+							tilemap.draw(ctx, TILES.wall_top_left_outer, x2 + r.w / 2 - tilemap.tileSize, Math.min(y2, y3) + r.w / 2 - tilemap.tileSize);
+							tilemap.fillRect(ctx, TILES.wall_right, x2 + r.w / 2 - tilemap.tileSize, Math.min(y2, y3) + r.w / 2, tilemap.tileSize, Math.abs(y2 - y3) - tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_bottom_right, x2 + r.w / 2 - tilemap.tileSize, Math.max(y2, y3) + r.w / 2 - tilemap.tileSize);
+							tilemap.fillRect(ctx, TILES.wall_bottom, x2 - r.w / 2, Math.max(y2, y3) + r.w / 2 - tilemap.tileSize, r.w - tilemap.tileSize, tilemap.tileSize);
+						}
+						else
+						{
+							tilemap.fillRect(ctx, TILES.wall_top, x2 - r.w / 2, Math.min(y2, y3) - r.w / 2, r.w - tilemap.tileSize, tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_top_right, x2 + r.w / 2 - tilemap.tileSize, Math.min(y2, y3) - r.w / 2);
+							tilemap.fillRect(ctx, TILES.wall_right, x2 + r.w / 2 - tilemap.tileSize, Math.min(y2, y3) - r.w / 2 + tilemap.tileSize, tilemap.tileSize, Math.abs(y2 - y3) - tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_bottom_left_outer, x2 + r.w / 2 - tilemap.tileSize, Math.max(y2, y3) - r.w / 2);
+							tilemap.draw(ctx, TILES.wall_top_right_outer, x2 - r.w / 2, Math.min(y2, y3) + r.w / 2 - tilemap.tileSize);
+							tilemap.fillRect(ctx, TILES.wall_left, x2 - r.w / 2, Math.min(y2, y3) + r.w / 2, tilemap.tileSize, Math.abs(y2 - y3) - tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_bottom_left, x2 - r.w / 2, Math.max(y2, y3) + r.w / 2 - tilemap.tileSize);
+							tilemap.fillRect(ctx, TILES.wall_bottom, x2 - r.w / 2 + tilemap.tileSize, Math.max(y2, y3) + r.w / 2 - tilemap.tileSize, r.w - tilemap.tileSize, tilemap.tileSize);
+						}
+						tilemap.fillRect(ctx, TILES.wall_top, Math.min(x4, x3) + dx2, y4 - r.w / 2, Math.abs(x3 - x4) - r.w / 2, tilemap.tileSize);
+						tilemap.fillRect(ctx, TILES.wall_bottom, Math.min(x4, x3) + dx2, y4 + r.w / 2 - tilemap.tileSize, Math.abs(x3 - x4) - r.w / 2, tilemap.tileSize);
+
+						tilemap.draw(ctx, (x1 < x2 ? TILES.wall_bottom_left_outer : TILES.wall_bottom_right_outer), x1 - (x1 < x2 ? tilemap.tileSize : 0), y1 - r.w / 2);
+						tilemap.draw(ctx, (x1 < x2 ? TILES.wall_top_left_outer : TILES.wall_top_right_outer), x1 - (x1 < x2 ? tilemap.tileSize : 0), y1 + r.w / 2 - tilemap.tileSize);
+						tilemap.draw(ctx, (x3 > x4 ? TILES.wall_bottom_left_outer : TILES.wall_bottom_right_outer), x4 - (x3 > x4 ? tilemap.tileSize : 0), y4 - r.w / 2);
+						tilemap.draw(ctx, (x3 > x4 ? TILES.wall_top_left_outer : TILES.wall_top_right_outer), x4 - (x3 > x4 ? tilemap.tileSize : 0), y4 + r.w / 2 - tilemap.tileSize);
+					})();
 				}
 				else
 				{
@@ -220,6 +302,42 @@ class Frame
 
 					const dy2 = y3 > y4 ? 0 : r.w / 2;
 					tilemap.fillRect(ctx, tile, x4 - r.w / 2, Math.min(y4, y3) + dy2, r.w, Math.abs(y4 - y3) - r.w / 2);
+					(function drawWalls()
+					{
+						tilemap.fillRect(ctx, TILES.wall_left, x1 - r.w / 2, Math.min(y1, y2) + dy1, tilemap.tileSize, Math.abs(y1 - y2) - r.w / 2);
+						tilemap.fillRect(ctx, TILES.wall_right, x1 + r.w / 2 - tilemap.tileSize, Math.min(y1, y2) + dy1, tilemap.tileSize, Math.abs(y1 - y2) - r.w / 2);
+
+						if (x2 < x3 != y2 > y1)
+						{
+							tilemap.fillRect(ctx, TILES.wall_left, Math.min(x2, x3) - r.w / 2, y2 - r.w / 2 + tilemap.tileSize, tilemap.tileSize, r.w - tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_top_left, Math.min(x2, x3) - r.w / 2, y2 - r.w / 2);
+							tilemap.fillRect(ctx, TILES.wall_top, Math.min(x2, x3) - r.w / 2 + tilemap.tileSize, y2 - r.w / 2, Math.abs(x2 - x3) - tilemap.tileSize, tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_bottom_right_outer, Math.max(x2, x3) - r.w / 2, y2 - r.w / 2);
+							tilemap.fillRect(ctx, TILES.wall_right, Math.max(x2, x3) + r.w / 2 - tilemap.tileSize, y2 - r.w / 2, tilemap.tileSize, r.w - tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_bottom_right, Math.max(x2, x3) + r.w / 2 - tilemap.tileSize, y2 + r.w / 2 - tilemap.tileSize);
+							tilemap.fillRect(ctx, TILES.wall_bottom, Math.min(x2, x3) + r.w / 2, y2 + r.w / 2 - tilemap.tileSize, Math.abs(x2 - x3) - tilemap.tileSize, tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_top_left_outer, Math.min(x2, x3) + r.w / 2 - tilemap.tileSize, y2 + r.w / 2 - tilemap.tileSize);
+						}
+						else
+						{
+							tilemap.fillRect(ctx, TILES.wall_left, Math.min(x2, x3) - r.w / 2, y2 - r.w / 2, tilemap.tileSize, r.w - tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_bottom_left, Math.min(x2, x3) - r.w / 2, y2 + r.w / 2 - tilemap.tileSize);
+							tilemap.fillRect(ctx, TILES.wall_bottom, Math.min(x2, x3) - r.w / 2 + tilemap.tileSize, y2 + r.w / 2 - tilemap.tileSize, Math.abs(x2 - x3) - tilemap.tileSize, tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_top_right_outer, Math.max(x2, x3) - r.w / 2, y2 + r.w / 2 - tilemap.tileSize);
+							tilemap.fillRect(ctx, TILES.wall_right, Math.max(x2, x3) + r.w / 2 - tilemap.tileSize, y2 - r.w / 2 + tilemap.tileSize, tilemap.tileSize, r.w - tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_top_right, Math.max(x2, x3) + r.w / 2 - tilemap.tileSize, y2 - r.w / 2);
+							tilemap.fillRect(ctx, TILES.wall_top, Math.min(x2, x3) + r.w / 2, y2 - r.w / 2, Math.abs(x2 - x3) - tilemap.tileSize, tilemap.tileSize);
+							tilemap.draw(ctx, TILES.wall_bottom_left_outer, Math.min(x2, x3) + r.w / 2 - tilemap.tileSize, y2 - r.w / 2);
+						}
+
+						tilemap.fillRect(ctx, TILES.wall_left, x4 - r.w / 2, Math.min(y4, y3) + dy2, tilemap.tileSize, Math.abs(y4 - y3) - r.w / 2);
+						tilemap.fillRect(ctx, TILES.wall_right, x4 + r.w / 2 - tilemap.tileSize, Math.min(y4, y3) + dy2, tilemap.tileSize, Math.abs(y4 - y3) - r.w / 2);
+
+						tilemap.draw(ctx, (y1 < y2 ? TILES.wall_top_left_outer : TILES.wall_bottom_left_outer), x1 + r.w / 2 - tilemap.tileSize, y1 - (y1 < y2 ? tilemap.tileSize : 0));
+						tilemap.draw(ctx, (y1 < y2 ? TILES.wall_top_right_outer : TILES.wall_bottom_right_outer), x1 - r.w / 2, y1 - (y1 < y2 ? tilemap.tileSize : 0));
+						tilemap.draw(ctx, (y3 > y4 ? TILES.wall_top_left_outer : TILES.wall_bottom_left_outer), x4 + r.w / 2 - tilemap.tileSize, y4 - (y3 > y4 ? tilemap.tileSize : 0));
+						tilemap.draw(ctx, (y3 > y4 ? TILES.wall_top_right_outer : TILES.wall_bottom_right_outer), x4 - r.w / 2, y4 - (y3 > y4 ? tilemap.tileSize : 0));
+					})()
 				}
 			}
 			else

@@ -36,6 +36,10 @@ export class Tilemap
 			case TILES.wall_bottom: sx = 4; sy = 2; break;
 			case TILES.wall_bottom_left: sx = 3; sy = 2; break;
 			case TILES.wall_left: sx = 3; sy = 1; break;
+			case TILES.wall_bottom_left_outer: sx = 6; sy = 1; break;
+			case TILES.wall_bottom_right_outer: sx = 7; sy = 1; break;
+			case TILES.wall_top_left_outer: sx = 6; sy = 0; break;
+			case TILES.wall_top_right_outer: sx = 7; sy = 0; break;
 
 			default: throw new Error("switch default");
 		}
@@ -70,11 +74,15 @@ export enum TILES
 	floor,
 	dev1,
 	wall_top_left,
+	wall_bottom_left_outer,
 	wall_top,
 	wall_top_right,
+	wall_bottom_right_outer,
 	wall_right,
 	wall_bottom_right,
+	wall_top_right_outer,
 	wall_bottom,
 	wall_bottom_left,
+	wall_top_left_outer,
 	wall_left,
 }
